@@ -35,3 +35,88 @@ class Comment(models.Model):
     author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+
+
+
+class Worksite(models.Model):
+    name = models.CharField(max_length=255)
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+class Group(models.Model):
+    name = models.CharField(max_length=255)
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+class Company(models.Model):
+    name = models.CharField(max_length=255)
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='company_created_by')
+
+class Customer(models.Model):
+    name = models.CharField(max_length=255)
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+
+
+class Tax(models.Model):
+    tax = models.DecimalField(max_digits=10, decimal_places=2)
+    update_date = models.DateTimeField()
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+class Withholding(models.Model):
+    withholding = models.DecimalField(max_digits=10, decimal_places=2)
+    update_date = models.DateTimeField()
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+class Payment(models.Model):
+    date = models.DateTimeField()
+    worksite = models.ForeignKey(Worksite, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    debt = models.DecimalField(max_digits=15, decimal_places=2)
+    bank = models.CharField(max_length=255)
+
+    # Checklist alanları buraya eklendi
+    check_time = models.DateTimeField(null=True, blank=True)
+
+    check_no = models.CharField(max_length=255,null=True, blank=True)
+
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.customer.name} - {self.check_no}"
+
+class Invoice(models.Model):
+    date = models.DateTimeField()
+    worksite = models.ForeignKey(Worksite, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    material = models.CharField(max_length=255)
+    quantity = models.IntegerField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax = models.DecimalField(max_digits=10, decimal_places=2)
+    withholding = models.DecimalField(max_digits=10, decimal_places=2)
+    receivable = models.DecimalField(max_digits=10, decimal_places=2)
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+class Personal(models.Model):
+    name = models.CharField(max_length=255)
+    creation_date = models.DateTimeField()
+    identity_number = models.CharField(max_length=20)
+    entry = models.DateTimeField()
+    exit = models.DateTimeField()
+    worksite = models.ForeignKey(Worksite, on_delete=models.CASCADE)
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+

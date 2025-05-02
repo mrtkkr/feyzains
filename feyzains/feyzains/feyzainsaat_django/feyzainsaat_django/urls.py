@@ -34,6 +34,7 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 
     path('', include('accounts.urls')),
+    path('core/', include('core.urls')),  # <--- core app varsa böyle bir şey olmalı
     path('website/', include('website.urls')),
 
 ]

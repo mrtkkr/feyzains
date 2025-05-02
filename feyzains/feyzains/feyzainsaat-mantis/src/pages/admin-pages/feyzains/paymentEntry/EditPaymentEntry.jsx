@@ -1,0 +1,343 @@
+import React, { useState, useContext, useEffect } from 'react';
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid,
+  Box,
+  CircularProgress,
+  FormHelperText
+} from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { tr } from 'date-fns/locale';
+import { toast } from 'react-toastify';
+import { PaymentEntryContext } from '../../../../contexts/admin/feyzains/PaymentEntryContext';
+import { sendApiRequest } from '../../../../services/network_service';
+
+const EditPaymentEntry = ({ open, onClose, paymentId }) => {
+  const { updatePayment, getPaymentById, loading } = useContext(PaymentEntryContext);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Form alanları için state'ler
+  const [date, setDate] = useState(new Date());
+  const [worksites, setWorksites] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [selectedWorksite, setSelectedWorksite] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [debt, setDebt] = useState('');
+  const [bank, setBank] = useState('');
+  const [check_no, setCheck_no] = useState('');
+  const [check_time, setCheck_time] = useState('');
+
+  // Validation errors
+  const [errors, setErrors] = useState({});
+
+  // Şantiyeleri, grupları, şirketleri ve müşterileri yükle
+  useEffect(() => {
+    if (open && paymentId) {
+      loadData();
+    }
+  }, [open, paymentId]);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      // Master verileri yükle
+      await Promise.all([loadWorksites(), loadGroups(), loadCompanies(), loadCustomers()]);
+
+      // Ödeme detaylarını yükle
+      await loadPaymentDetails();
+    } catch (error) {
+      console.error('Veriler yüklenirken hata oluştu:', error);
+      toast.error('Veriler yüklenirken bir hata oluştu');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadPaymentDetails = async () => {
+    try {
+      const result = await getPaymentById(paymentId);
+      if (result.success) {
+        const payment = result.data;
+        setDate(new Date(payment.date));
+        setSelectedWorksite(payment.worksite.id);
+        setSelectedGroup(payment.group.id);
+        setSelectedCompany(payment.company.id);
+        setSelectedCustomer(payment.customer.id);
+        setBank(payment.bank);
+        setCheck_no(payment.check_no);
+        setCheck_time(payment.check_time);
+        setDebt(payment.debt);
+      } else {
+        toast.error('Ödeme kaydı bulunamadı');
+        onClose();
+      }
+    } catch (error) {
+      console.error('Ödeme kaydı yüklenirken hata:', error);
+      toast.error('Ödeme kaydı yüklenirken bir hata oluştu');
+      onClose();
+    }
+  };
+
+  const loadWorksites = async () => {
+    try {
+      const res = await sendApiRequest({
+        url: 'core/worksites/',
+        method: 'GET'
+      });
+      if (res.response.status === 200) {
+        setWorksites(res.data || []);
+      }
+    } catch (error) {
+      console.error('Şantiyeler yüklenirken hata oluştu:', error);
+    }
+  };
+
+  const loadGroups = async () => {
+    try {
+      const res = await sendApiRequest({
+        url: 'core/groups/',
+        method: 'GET'
+      });
+      if (res.response.status === 200) {
+        setGroups(res.data || []);
+      }
+    } catch (error) {
+      console.error('Gruplar yüklenirken hata oluştu:', error);
+    }
+  };
+
+  const loadCompanies = async () => {
+    try {
+      const res = await sendApiRequest({
+        url: 'core/companies/',
+        method: 'GET'
+      });
+      if (res.response.status === 200) {
+        setCompanies(res.data || []);
+      }
+    } catch (error) {
+      console.error('Şirketler yüklenirken hata oluştu:', error);
+    }
+  };
+
+  const loadCustomers = async () => {
+    try {
+      const res = await sendApiRequest({
+        url: 'core/customers/',
+        method: 'GET'
+      });
+      if (res.response.status === 200) {
+        setCustomers(res.data || []);
+      }
+    } catch (error) {
+      console.error('Müşteriler yüklenirken hata oluştu:', error);
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!date) newErrors.date = 'Tarih gereklidir';
+    if (!selectedWorksite) newErrors.worksite = 'Şantiye seçimi gereklidir';
+    if (!selectedGroup) newErrors.group = 'Grup seçimi gereklidir';
+    if (!selectedCompany) newErrors.company = 'Şirket seçimi gereklidir';
+    if (!selectedCustomer) newErrors.customer = 'Müşteri seçimi gereklidir';
+    if (!bank) newErrors.bank = 'Banka bilgisi gereklidir';
+    if (!check_no) newErrors.check_no = 'Çek No gereklidir';
+    if (!check_time) newErrors.check_time = 'Çek Vade Tarihi gereklidir';
+    if (!debt) newErrors.debt = 'Borç tutarı gereklidir';
+    else if (isNaN(debt) || parseFloat(debt) <= 0) newErrors.debt = 'Geçerli bir borç tutarı giriniz';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const paymentData = {
+        date: date.toISOString(),
+        worksite: selectedWorksite,
+        group: selectedGroup,
+        company: selectedCompany,
+        customer: selectedCustomer,
+        bank: bank,
+        check_no: check_no,
+        check_time: check_time,
+        debt: parseFloat(debt)
+      };
+
+      const result = await updatePayment(paymentId, paymentData);
+
+      if (result.success) {
+        toast.success('Ödeme kaydı başarıyla güncellendi');
+        onClose();
+      } else {
+        toast.error(result.error || 'Ödeme kaydı güncellenemedi');
+      }
+    } catch (error) {
+      console.error('Ödeme kaydı güncellenirken hata:', error);
+      toast.error('Ödeme kaydı güncellenirken bir hata oluştu');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>Ödeme Kaydını Düzenle</DialogTitle>
+      <DialogContent>
+        {isLoading ? (
+          <Box display="flex" justifyContent="center" my={4}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
+                <DatePicker
+                  label="Tarih"
+                  value={date}
+                  onChange={(newDate) => setDate(newDate)}
+                  renderInput={(params) => <TextField {...params} fullWidth error={!!errors.date} helperText={errors.date} />}
+                />
+              </LocalizationProvider>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth error={!!errors.worksite}>
+                <InputLabel>Şantiye</InputLabel>
+                <Select value={selectedWorksite} onChange={(e) => setSelectedWorksite(e.target.value)} label="Şantiye">
+                  {worksites.map((worksite) => (
+                    <MenuItem key={worksite.id} value={worksite.id}>
+                      {worksite.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.worksite && <FormHelperText>{errors.worksite}</FormHelperText>}
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth error={!!errors.group}>
+                <InputLabel>Grup</InputLabel>
+                <Select value={selectedGroup} onChange={(e) => setSelectedGroup(e.target.value)} label="Grup">
+                  {groups.map((group) => (
+                    <MenuItem key={group.id} value={group.id}>
+                      {group.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.group && <FormHelperText>{errors.group}</FormHelperText>}
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth error={!!errors.company}>
+                <InputLabel>Şirket</InputLabel>
+                <Select value={selectedCompany} onChange={(e) => setSelectedCompany(e.target.value)} label="Şirket">
+                  {companies.map((company) => (
+                    <MenuItem key={company.id} value={company.id}>
+                      {company.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.company && <FormHelperText>{errors.company}</FormHelperText>}
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth error={!!errors.customer}>
+                <InputLabel>Müşteri</InputLabel>
+                <Select value={selectedCustomer} onChange={(e) => setSelectedCustomer(e.target.value)} label="Müşteri">
+                  {customers.map((customer) => (
+                    <MenuItem key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.customer && <FormHelperText>{errors.customer}</FormHelperText>}
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="Banka"
+                fullWidth
+                value={bank}
+                onChange={(e) => setBank(e.target.value)}
+                error={!!errors.bank}
+                helperText={errors.bank}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="Çek No"
+                fullWidth
+                value={check_no}
+                onChange={(e) => setCheck_no(e.target.value)}
+                error={!!errors.check_no}
+                helperText={errors.check_no}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="Çek Vade"
+                type="date"
+                fullWidth
+                value={check_time}
+                onChange={(e) => setCheck_time(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                error={!!errors.check_time}
+                helperText={errors.check_time}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                label="Borç Tutarı"
+                type="number"
+                fullWidth
+                value={debt}
+                onChange={(e) => setDebt(e.target.value)}
+                InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+                error={!!errors.debt}
+                helperText={errors.debt}
+              />
+            </Grid>
+          </Grid>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={isSubmitting || loading || isLoading}>
+          İptal
+        </Button>
+        <Button onClick={handleSubmit} color="primary" variant="contained" disabled={isSubmitting || loading || isLoading}>
+          {isSubmitting || loading ? <CircularProgress size={24} /> : 'Güncelle'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export default EditPaymentEntry;

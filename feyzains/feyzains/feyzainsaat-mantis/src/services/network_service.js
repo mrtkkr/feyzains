@@ -96,7 +96,11 @@ const sendApiRequest = async ({ url, method, body = null, headers = {}, language
       });
     }
 
-    const data = await response.json();
+    let data = null;
+    // 204 ise body olmadığından json() çağırma
+    if (response.status !== 204) {
+      data = await response.json();
+    }
     return { data: data, response: response };
   } catch (error) {
     console.log('error', error);
@@ -113,4 +117,4 @@ const openFile = async (fileUrl) => {
   return window.open(PUBLIC_URL + fileUrl, '_blank');
 };
 
-export { sendApiRequest, openFile };
+export { sendApiRequest, openFile, PUBLIC_URL };

@@ -161,9 +161,10 @@ const PanelPage = () => {
       <Typography variant="h4" gutterBottom>
         Yönetici Paneli
       </Typography>
+
       <Grid container spacing={3} mb={4}>
-        {/* User Creation Card */}
-        <Grid item xs={12} md={4}>
+        {/* Sol: Yeni Yönetici Ekle Formu */}
+        <Grid item xs={12} md={5}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -218,7 +219,6 @@ const PanelPage = () => {
                       required
                     />
                   </Grid>
-
                   <Grid item xs={12}>
                     <Button type="submit" variant="contained" color="primary">
                       Ekle
@@ -229,56 +229,61 @@ const PanelPage = () => {
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Sağ: Yöneticiler Tablosu */}
+        <Grid item xs={12} md={7}>
+          <Typography variant="h6" mb={1}>
+            Yöneticiler
+          </Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Ad</TableCell>
+                  <TableCell>Soyad</TableCell>
+                  <TableCell>Kullanıcı Adı</TableCell>
+                  <TableCell align="right">İşlemler</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {visibleUserRows.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>{user.first_name}</TableCell>
+                    <TableCell>{user.last_name}</TableCell>
+                    <TableCell>{user.user_name}</TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Düzenle">
+                        <IconButton onClick={() => handleEditUserClick(user.id)}>
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Sil">
+                        <IconButton onClick={() => handleDeleteUser(user.id)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[50, 75]}
+            component="div"
+            count={users.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </Grid>
       </Grid>
+      <Grid container spacing={3} mb={4}></Grid>
+
       {isEditUserDialogOpen && selectedUserId && (
         <EditUserPage open={isEditUserDialogOpen} onClose={() => handleEditUser()} userId={selectedUserId} />
       )}
-      {/* Users Table */}
-      <Typography variant="h6" mt={4} mb={1}>
-        Yöneticiler
-      </Typography>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Ad</TableCell>
-              <TableCell>Soyad</TableCell>
-              <TableCell>Kullanıcı Adı</TableCell>
-              <TableCell align="right">İşlemler</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {visibleUserRows.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.first_name}</TableCell>
-                <TableCell>{user.last_name}</TableCell>
-                <TableCell>{user.user_name}</TableCell>
-                <TableCell align="right">
-                  <Tooltip title="Düzenle">
-                    <IconButton onClick={() => handleEditUserClick(user.id)}>
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Sil">
-                    <IconButton onClick={() => handleDeleteUser(user.id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[50, 75]}
-        component="div"
-        count={users.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
     </Box>
   );
 };
