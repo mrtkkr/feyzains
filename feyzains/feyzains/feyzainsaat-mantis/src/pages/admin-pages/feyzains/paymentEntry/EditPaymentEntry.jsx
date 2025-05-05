@@ -96,7 +96,7 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
   const loadWorksites = async () => {
     try {
       const res = await sendApiRequest({
-        url: 'core/worksites/',
+        url: 'core/worksite/',
         method: 'GET'
       });
       if (res.response.status === 200) {

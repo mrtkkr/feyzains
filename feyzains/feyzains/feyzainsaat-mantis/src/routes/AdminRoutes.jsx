@@ -8,7 +8,9 @@ import PaymentEntryPage from 'pages/admin-pages/feyzains/paymentEntry/PaymentEnt
 
 import PanelProvider from 'contexts/admin/PanelContext';
 import PaymentEntryProvider from 'contexts/admin/feyzains/PaymentEntryContext';
+import WorksiteProvider from 'contexts/admin/feyzains/WorksiteContext';
 import SnippetProvider from 'contexts/admin/SnippetContext';
+import GroupProvider from 'contexts/admin/feyzains/GroupContext';
 
 const AdminRoutes = {
   path: '/',
@@ -17,7 +19,11 @@ const AdminRoutes = {
       <PanelProvider>
         <SnippetProvider>
           <PaymentEntryProvider>
-            <Dashboard />
+            <WorksiteProvider>
+              <GroupProvider>
+                <Dashboard />
+              </GroupProvider>
+            </WorksiteProvider>
           </PaymentEntryProvider>
         </SnippetProvider>
       </PanelProvider>

@@ -24,8 +24,13 @@ import {
 import { toast } from 'react-toastify';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
 import { PanelContext } from 'contexts/admin/PanelContext';
+import { WorksiteContext } from 'contexts/admin/feyzains/WorksiteContext';
+
 import EditUserPage from './EditUserPage';
+import EditWorksitePage from '../Panel/Worksite/EditWorksitePage';
+import AddWorksitePage from '../Panel/Worksite/AddWorksitePage';
 //import { NotificationContext } from "contexts/auth/NotificationContext"; // ekle
 
 function descendingComparator(a, b, orderBy) {
@@ -63,17 +68,25 @@ const PanelPage = () => {
 
   // Context
   const { users, fetchUsers, createUser, deleteUser } = useContext(PanelContext);
+  const { worksites, fetchWorksites, deleteWorksite } = useContext(WorksiteContext);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [isEditWorksiteDialogOpen, setIsEditWorksiteDialogOpen] = useState(false);
+  const [isCreateWorksiteDialogOpen, setIsCreateWorksiteDialogOpen] = useState(false);
+  const [selectedWorksiteId, setSelectedWorksiteId] = useState(null);
   //const [notificationMessage, setNotificationMessage] = useState("");
   //const { createNotification } = useContext(NotificationContext);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     fetchUsers();
+  }, []);
+  useEffect(() => {
+    fetchWorksites();
   }, []);
 
   const handleRequestSort = (event, property) => {
@@ -89,6 +102,12 @@ const PanelPage = () => {
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  const handleCreateDialogClose = () => {
+    setIsCreateWorksiteDialogOpen(false);
+    // Trigger a refresh only when needed
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   const handleUserSubmit = async (e) => {
@@ -121,6 +140,16 @@ const PanelPage = () => {
     fetchUsers();
   };
 
+  const handleEditWorksite = (worksiteId = null) => {
+    if (worksiteId) {
+      setSelectedWorksiteId(worksiteId);
+      setIsEditWorksiteDialogOpen(true);
+    } else {
+      setSelectedWorksiteId(null);
+      setIsEditWorksiteDialogOpen(false);
+    }
+  };
+
   const handleDeleteUser = async (id) => {
     if (window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
       const response = await deleteUser(id);
@@ -129,6 +158,17 @@ const PanelPage = () => {
         fetchUsers();
       } else {
         toast.error(response.error || 'Kullanıcı silinemedi');
+      }
+    }
+  };
+  const handleDeleteWorksite = async (id) => {
+    if (window.confirm('Bu şantiyeyi silmek istediğinizden emin misiniz?')) {
+      const response = await deleteWorksite(id);
+      if (response.success) {
+        toast.success('Şantiye başarıyla silindi');
+        fetchWorksites();
+      } else {
+        toast.error(response.error || 'Şantiye silinemedi');
       }
     }
   };
@@ -154,6 +194,13 @@ const PanelPage = () => {
         .sort(getComparator(order, orderBy))
         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
     [order, orderBy, page, rowsPerPage, users]
+  );
+  const createWorksiteProps = useMemo(
+    () => ({
+      open: isCreateWorksiteDialogOpen,
+      onClose: handleCreateDialogClose
+    }),
+    [isCreateWorksiteDialogOpen]
   );
 
   return (
@@ -279,7 +326,65 @@ const PanelPage = () => {
           />
         </Grid>
       </Grid>
-      <Grid container spacing={3} mb={4}></Grid>
+
+      <Grid container spacing={3} mb={4}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" gutterBottom>
+                  Şantiyeler
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => setIsCreateWorksiteDialogOpen(true)}
+                  sx={{ ml: 2 }}
+                >
+                  Şantiye Ekle
+                </Button>
+              </Box>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Ad</TableCell>
+                      <TableCell>Oluşturan</TableCell>
+                      <TableCell align="right">İşlemler</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {worksites.map((worksite) => (
+                      <TableRow key={worksite.id}>
+                        <TableCell>{worksite.name}</TableCell>
+                        <TableCell>{worksite.created_by?.username || '-'}</TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="Düzenle">
+                            <IconButton onClick={() => handleEditWorksite(worksite.id)}>
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Sil">
+                            <IconButton onClick={() => handleDeleteWorksite(worksite.id)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+      {isCreateWorksiteDialogOpen && <AddWorksitePage {...createWorksiteProps} />}
+      {isEditWorksiteDialogOpen && selectedWorksiteId && (
+        <EditWorksitePage open={isEditWorksiteDialogOpen} onClose={() => handleEditWorksite()} worksiteId={selectedWorksiteId} />
+      )}
 
       {isEditUserDialogOpen && selectedUserId && (
         <EditUserPage open={isEditUserDialogOpen} onClose={() => handleEditUser()} userId={selectedUserId} />
