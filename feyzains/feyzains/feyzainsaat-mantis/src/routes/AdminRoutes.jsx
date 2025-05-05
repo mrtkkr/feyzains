@@ -11,6 +11,7 @@ import PaymentEntryProvider from 'contexts/admin/feyzains/PaymentEntryContext';
 import WorksiteProvider from 'contexts/admin/feyzains/WorksiteContext';
 import SnippetProvider from 'contexts/admin/SnippetContext';
 import GroupProvider from 'contexts/admin/feyzains/GroupContext';
+import CompanyProvider from 'contexts/admin/feyzains/CompanyContext';
 
 const AdminRoutes = {
   path: '/',
@@ -21,7 +22,9 @@ const AdminRoutes = {
           <PaymentEntryProvider>
             <WorksiteProvider>
               <GroupProvider>
-                <Dashboard />
+                <CompanyProvider>
+                  <Dashboard />
+                </CompanyProvider>
               </GroupProvider>
             </WorksiteProvider>
           </PaymentEntryProvider>

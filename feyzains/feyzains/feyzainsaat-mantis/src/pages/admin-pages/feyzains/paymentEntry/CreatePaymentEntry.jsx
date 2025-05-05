@@ -72,7 +72,7 @@ const CreatePaymentEntry = ({ open, onClose }) => {
   const loadGroups = async () => {
     try {
       const res = await sendApiRequest({
-        url: 'core/groups/',
+        url: 'core/group/',
         method: 'GET'
       });
       if (res.response.status === 200) {
@@ -86,7 +86,7 @@ const CreatePaymentEntry = ({ open, onClose }) => {
   const loadCompanies = async () => {
     try {
       const res = await sendApiRequest({
-        url: 'core/companies/',
+        url: 'core/company/',
         method: 'GET'
       });
       if (res.response.status === 200) {
@@ -100,7 +100,7 @@ const CreatePaymentEntry = ({ open, onClose }) => {
   const loadCustomers = async () => {
     try {
       const res = await sendApiRequest({
-        url: 'core/customers/',
+        url: 'core/customer/',
         method: 'GET'
       });
       if (res.response.status === 200) {

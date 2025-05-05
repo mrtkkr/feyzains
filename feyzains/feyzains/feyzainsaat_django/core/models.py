@@ -120,3 +120,32 @@ class Personal(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
+class PaymenInvoice(models.Model):
+    date = models.DateTimeField()
+    worksite = models.ForeignKey(Worksite, on_delete=models.CASCADE)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    debt = models.DecimalField(max_digits=15, decimal_places=2,null=True, blank=True)
+    bank = models.CharField(max_length=255,null=True, blank=True)
+
+    # Checklist alanları buraya eklendi
+    check_time = models.DateTimeField(null=True, blank=True)
+
+    check_no = models.CharField(max_length=255,null=True, blank=True)
+
+    # Invoice alanları buraya eklendi
+    material = models.CharField(max_length=255,null=True, blank=True)
+    quantity = models.IntegerField(null=True, blank=True)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    tax = models.DecimalField(max_digits=10, decimal_places=2)
+    withholding = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    receivable = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.customer.name} - {self.check_no}"
+    

@@ -2,25 +2,25 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, Grid, Button } from '@mui/material';
 import { toast } from 'react-toastify';
-import { GroupContext } from '../../../../../contexts/admin/feyzains/GroupContext';
+import { CompanyContext } from '../../../../../contexts/admin/feyzains/CompanyContext';
 
-const EditGroupPage = ({ open, onClose, groupId }) => {
-  const { groups, updateGroup, fetchGroups } = useContext(GroupContext);
+const EditCompanyPage = ({ open, onClose, companyId }) => {
+  const { companies, updateCompany, fetchCompanies } = useContext(CompanyContext);
 
   const [formData, setFormData] = useState({
     name: ''
   });
 
   useEffect(() => {
-    if (groupId) {
-      const groupToEdit = groups.find((gp) => gp.id === groupId);
-      if (groupToEdit) {
+    if (companyId) {
+      const companyToEdit = companies.find((cp) => cp.id === companyId);
+      if (companyToEdit) {
         setFormData({
-          name: groupToEdit.name || ''
+          name: companyToEdit.name || ''
         });
       }
     }
-  }, [groupId, groups]);
+  }, [companyId, companies]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,29 +29,29 @@ const EditGroupPage = ({ open, onClose, groupId }) => {
 
   const handleSubmit = async () => {
     if (!formData.name) {
-      toast.error('Lütfen grup adını girin!');
+      toast.error('Lütfen şirket adını girin!');
       return;
     }
 
-    const updatedGroup = { id: groupId, ...formData };
+    const updatedCompany = { id: companyId, ...formData };
 
-    const res = await updateGroup(groupId, updatedGroup);
+    const res = await updateCompany(companyId, updatedCompany);
     if (res.error) {
-      toast.error('Grup güncellenemedi!');
+      toast.error('Şirket güncellenemedi!');
     } else {
-      toast.success('Grup başarıyla güncellendi!');
-      fetchGroups();
+      toast.success('Şirket başarıyla güncellendi!');
+      fetchCompanies();
       onClose();
     }
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Grup Düzenle</DialogTitle>
+      <DialogTitle>Şirket Düzenle</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12}>
-            <TextField fullWidth label="Grup Adı" name="name" value={formData.name} onChange={handleChange} required />
+            <TextField fullWidth label="Şirket Adı" name="name" value={formData.name} onChange={handleChange} required />
           </Grid>
         </Grid>
       </DialogContent>
@@ -67,4 +67,4 @@ const EditGroupPage = ({ open, onClose, groupId }) => {
   );
 };
 
-export default EditGroupPage;
+export default EditCompanyPage;
