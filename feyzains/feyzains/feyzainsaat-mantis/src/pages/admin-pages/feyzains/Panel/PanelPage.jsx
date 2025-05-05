@@ -36,6 +36,9 @@ import AddWorksitePage from '../Panel/Worksite/AddWorksitePage';
 import { CompanyContext } from 'contexts/admin/feyzains/CompanyContext';
 import AddCompanyPage from './Company/AddCompanyPage';
 import EditCompanyPage from './Company/EditCompanyPage';
+import { CustomerContext } from 'contexts/admin/feyzains/CustomerContext';
+import AddCustomerPage from './Customer/AddCustomerPage';
+import EditCustomerPage from './Customer/EditCustomerPage';
 //import { NotificationContext } from "contexts/auth/NotificationContext"; // ekle
 
 function descendingComparator(a, b, orderBy) {
@@ -76,6 +79,7 @@ const PanelPage = () => {
   const { worksites, fetchWorksites, deleteWorksite } = useContext(WorksiteContext);
   const { groups, fetchGroups, addGroup, deleteGroup } = useContext(GroupContext);
   const { companies, fetchCompanies, addCompany, deleteCompany } = useContext(CompanyContext);
+  const { customers, fetchCustomers, addCustomer, deleteCustomer } = useContext(CustomerContext);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
@@ -91,6 +95,9 @@ const PanelPage = () => {
   const [isEditCompanyDialogOpen, setIsEditCompanyDialogOpen] = useState(false);
   const [isCreateCompanyDialogOpen, setIsCreateCompanyDialogOpen] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState(null);
+  const [isEditCustomerDialogOpen, setIsEditCustomerDialogOpen] = useState(false);
+  const [isCreateCustomerDialogOpen, setIsCreateCustomerDialogOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   //const [notificationMessage, setNotificationMessage] = useState("");
   //const { createNotification } = useContext(NotificationContext);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -107,6 +114,17 @@ const PanelPage = () => {
   useEffect(() => {
     fetchCompanies();
   }, []);
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredWorksites, setFilteredWorksites] = useState([]);
+
+  useEffect(() => {
+    const filtered = worksites.filter((worksite) => worksite.name?.toLowerCase().includes(searchTerm.toLowerCase()));
+    setFilteredWorksites(filtered);
+  }, [searchTerm, worksites]);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -135,6 +153,11 @@ const PanelPage = () => {
   };
   const handleCreateCompanyDialogClose = () => {
     setIsCreateCompanyDialogOpen(false);
+    // Trigger a refresh only when needed
+    setRefreshTrigger((prev) => prev + 1);
+  };
+  const handleCreateCustomerDialogClose = () => {
+    setIsCreateCustomerDialogOpen(false);
     // Trigger a refresh only when needed
     setRefreshTrigger((prev) => prev + 1);
   };
@@ -196,6 +219,15 @@ const PanelPage = () => {
       setIsEditCompanyDialogOpen(false);
     }
   };
+  const handleEditCustomer = (customerId = null) => {
+    if (customerId) {
+      setSelectedCustomerId(customerId);
+      setIsEditCustomerDialogOpen(true);
+    } else {
+      setSelectedCustomerId(null);
+      setIsEditCustomerDialogOpen(false);
+    }
+  };
 
   const handleDeleteUser = async (id) => {
     if (window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
@@ -243,6 +275,17 @@ const PanelPage = () => {
       }
     }
   };
+  const handleDeleteCustomer = async (id) => {
+    if (window.confirm('Bu müşteriyi silmek istediğinizden emin misiniz?')) {
+      const response = await deleteCustomer(id);
+      if (response.success) {
+        toast.success('Müşteri başarıyla silindi');
+        fetchCustomers();
+      } else {
+        toast.error(response.error || 'Müşteri silinemedi');
+      }
+    }
+  };
 
   const handleNotificationSubmit = async (e) => {
     e.preventDefault();
@@ -286,6 +329,13 @@ const PanelPage = () => {
       onClose: handleCreateCompanyDialogClose
     }),
     [isCreateCompanyDialogOpen]
+  );
+  const createCustomerProps = useMemo(
+    () => ({
+      open: isCreateCustomerDialogOpen,
+      onClose: handleCreateCustomerDialogClose
+    }),
+    [isCreateCustomerDialogOpen]
   );
 
   return (
@@ -573,6 +623,58 @@ const PanelPage = () => {
             </CardContent>
           </Card>
         </Grid>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" gutterBottom>
+                  Müşteriler
+                </Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => setIsCreateCustomerDialogOpen(true)}
+                  sx={{ ml: 2 }}
+                >
+                  Müşteri Ekle
+                </Button>
+              </Box>
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Ad</TableCell>
+                      <TableCell>Oluşturan</TableCell>
+                      <TableCell align="right">İşlemler</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {customers.map((customer) => (
+                      <TableRow key={customer.id}>
+                        <TableCell>{customer.name}</TableCell>
+                        <TableCell>{customer.created_by?.username || '-'}</TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="Düzenle">
+                            <IconButton onClick={() => handleEditCustomer(customer.id)}>
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Sil">
+                            <IconButton onClick={() => handleDeleteCustomer(customer.id)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
       </Grid>
 
       {isCreateWorksiteDialogOpen && <AddWorksitePage {...createWorksiteProps} />}
@@ -588,6 +690,10 @@ const PanelPage = () => {
       {isCreateCompanyDialogOpen && <AddCompanyPage {...createCompanyProps} />}
       {isEditCompanyDialogOpen && selectedCompanyId && (
         <EditCompanyPage open={isEditCompanyDialogOpen} onClose={() => handleEditCompany()} companyId={selectedCompanyId} />
+      )}
+      {isCreateCustomerDialogOpen && <AddCustomerPage {...createCustomerProps} />}
+      {isEditCustomerDialogOpen && selectedCustomerId && (
+        <EditCustomerPage open={isEditCustomerDialogOpen} onClose={() => handleEditCustomer()} customerId={selectedCustomerId} />
       )}
 
       {isEditUserDialogOpen && selectedUserId && (

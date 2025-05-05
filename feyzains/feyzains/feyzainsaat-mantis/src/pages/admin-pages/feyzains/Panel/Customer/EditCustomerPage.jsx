@@ -2,25 +2,25 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, Grid, Button } from '@mui/material';
 import { toast } from 'react-toastify';
-import { CompanyContext } from '../../../../../contexts/admin/feyzains/CompanyContext';
+import { CustomerContext } from '../../../../../contexts/admin/feyzains/CustomerContext';
 
-const EditCompanyPage = ({ open, onClose, companyId }) => {
-  const { companies, updateCompany, fetchCompanies } = useContext(CompanyContext);
+const EditCustomerPage = ({ open, onClose, customerId }) => {
+  const { customers, updateCustomer, fetchCustomers } = useContext(CustomerContext);
 
   const [formData, setFormData] = useState({
     name: ''
   });
 
   useEffect(() => {
-    if (companyId) {
-      const companyToEdit = companies.find((cp) => cp.id === companyId);
-      if (companyToEdit) {
+    if (customerId) {
+      const customerToEdit = customers.find((cs) => cs.id === customerId);
+      if (customerToEdit) {
         setFormData({
-          name: companyToEdit.name || ''
+          name: customerToEdit.name || ''
         });
       }
     }
-  }, [companyId, companies]);
+  }, [customerId, customers]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,29 +29,29 @@ const EditCompanyPage = ({ open, onClose, companyId }) => {
 
   const handleSubmit = async () => {
     if (!formData.name) {
-      toast.error('Lütfen şirket adını girin!');
+      toast.error('Lütfen müşteri adını girin!');
       return;
     }
 
-    const updatedCompany = { id: companyId, ...formData };
+    const updatedCustomer = { id: customerId, ...formData };
 
-    const res = await updateCompany(companyId, updatedCompany);
+    const res = await updateCustomer(customerId, updatedCustomer);
     if (res.error) {
-      toast.error('Şirket güncellenemedi!');
+      toast.error('Müşteri güncellenemedi!');
     } else {
-      toast.success('Şirket başarıyla güncellendi!');
-      fetchCompanies();
+      toast.success('Müşteri başarıyla güncellendi!');
+      fetchCustomers();
       onClose();
     }
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Şirket Düzenle</DialogTitle>
+      <DialogTitle>Müşteri Düzenle</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12}>
-            <TextField fullWidth label="Şirket Adı" name="name" value={formData.name} onChange={handleChange} required />
+            <TextField fullWidth label="Müşteri Adı" name="name" value={formData.name} onChange={handleChange} required />
           </Grid>
         </Grid>
       </DialogContent>
@@ -67,4 +67,4 @@ const EditCompanyPage = ({ open, onClose, companyId }) => {
   );
 };
 
-export default EditCompanyPage;
+export default EditCustomerPage;

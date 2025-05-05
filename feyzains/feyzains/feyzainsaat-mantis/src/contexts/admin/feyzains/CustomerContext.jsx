@@ -2,7 +2,7 @@ import React, { createContext, useState, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { sendApiRequest } from 'services/network_service'; // API çağrıları için kullanılan servis
 
-export const CompanyContext = createContext();
+export const CustomerContext = createContext();
 
 const CustomerProvider = ({ children }) => {
   const [customers, setCustomers] = useState([]);
@@ -51,7 +51,7 @@ const CustomerProvider = ({ children }) => {
 
       if (res?.response?.status === 201) {
         // Başarılı bir şekilde eklendiğinde, listeyi güncelliyoruz
-        setCompanies((prev) => [...prev, res.data]);
+        setCustomers((prev) => [...prev, res.data]);
         return { success: true, data: res.data };
       } else {
         setError('Müşteri eklenemedi.');

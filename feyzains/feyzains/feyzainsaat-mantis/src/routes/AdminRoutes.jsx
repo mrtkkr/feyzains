@@ -12,6 +12,7 @@ import WorksiteProvider from 'contexts/admin/feyzains/WorksiteContext';
 import SnippetProvider from 'contexts/admin/SnippetContext';
 import GroupProvider from 'contexts/admin/feyzains/GroupContext';
 import CompanyProvider from 'contexts/admin/feyzains/CompanyContext';
+import CustomerProvider from 'contexts/admin/feyzains/CustomerContext';
 
 const AdminRoutes = {
   path: '/',
@@ -23,7 +24,9 @@ const AdminRoutes = {
             <WorksiteProvider>
               <GroupProvider>
                 <CompanyProvider>
-                  <Dashboard />
+                  <CustomerProvider>
+                    <Dashboard />
+                  </CustomerProvider>
                 </CompanyProvider>
               </GroupProvider>
             </WorksiteProvider>

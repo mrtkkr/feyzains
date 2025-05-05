@@ -4,7 +4,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle, TextField, Grid, But
 import { toast } from 'react-toastify';
 import { CustomerContext } from '../../../../../contexts/admin/feyzains/CustomerContext';
 
-const AddCompanyPage = ({ open, onClose }) => {
+const AddCustomerPage = ({ open, onClose }) => {
   const { addCustomer, fetchCustomers } = useContext(CustomerContext);
 
   const [formData, setFormData] = useState({
@@ -18,16 +18,16 @@ const AddCompanyPage = ({ open, onClose }) => {
 
   const handleSubmit = async () => {
     if (!formData.name) {
-      toast.error('Lütfen şirket adını girin!');
+      toast.error('Lütfen müşteri adını girin!');
       return;
     }
 
-    const res = await addCompany(formData);
+    const res = await addCustomer(formData);
     if (res.error) {
-      toast.error('Şirket eklenemedi!');
+      toast.error('Müşteri eklenemedi!');
     } else {
-      toast.success('Şirket başarıyla eklendi!');
-      fetchCompanies();
+      toast.success('Müşteri başarıyla eklendi!');
+      fetchCustomers();
       setFormData({ name: '' }); // Formu temizle
       onClose();
     }
@@ -35,11 +35,11 @@ const AddCompanyPage = ({ open, onClose }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Yeni Şirket Ekle</DialogTitle>
+      <DialogTitle>Yeni Müşteri Ekle</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12}>
-            <TextField fullWidth label="Şirket Adı" name="name" value={formData.name} onChange={handleChange} required />
+            <TextField fullWidth label="Müşteri Adı" name="name" value={formData.name} onChange={handleChange} required />
           </Grid>
         </Grid>
       </DialogContent>
@@ -55,4 +55,4 @@ const AddCompanyPage = ({ open, onClose }) => {
   );
 };
 
-export default AddCompanyPage;
+export default AddCustomerPage;
