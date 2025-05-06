@@ -4,7 +4,8 @@ import personal from './personal';
 import inventory from './inventory';
 import finances from './finances';
 import admin from './admin';
-import payment_entry from 'personal-menu-items/payment_entry';
+import payment_entry from './entryPayment';
+import invoice_bill from './invoiceBill';
 
 // ==============================|| MENU ITEMS ||============================== //
 
@@ -14,6 +15,7 @@ const menuItems = {
     // inventory,
     // finances,
     payment_entry,
+    invoice_bill,
     admin
   ]
 };

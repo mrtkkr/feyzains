@@ -8,6 +8,7 @@ import naceCodes from './nace-codes';
 import offersAndAgreements from './offers-and-agreements';
 import personalTasks from './personal-tasks';
 import payment_entry from './payment_entry';
+import invoice_bill from './invoice_bill';
 
 // ==============================|| MENU ITEMS ||============================== //
 
@@ -17,7 +18,8 @@ const personalMenuItems = {
     company,
     personalTasks,
     naceCodes,
-    payment_entry
+    payment_entry,
+    invoice_bill
     // personal,
     // checklist,
     // tasks,

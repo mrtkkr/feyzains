@@ -21,19 +21,19 @@ const icons = {
 
 // ==============================|| MENU ITEMS - UTILITIES ||============================== //
 
-const payment_entry = {
-  id: 'payment_entry',
-  title: 'Ödeme Girişi',
+const debt = {
+  id: 'invoice_bill',
+  title: 'Fatura Ödeme',
   type: 'group',
   children: [
     {
-      id: 'payment_entry',
-      title: 'Ödeme Girişi',
+      id: 'invoice_bill',
+      title: 'Fatura Ödeme',
       type: 'item',
-      url: '/payment_entry',
+      url: '/invoice_bill',
       icon: icons.AssignmentIcon
     }
   ]
 };
 
-export default payment_entry;
+export default debt;

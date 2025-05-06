@@ -5,6 +5,7 @@ import LoginCheck from 'LoginCheck';
 import PanelPage from 'pages/admin-pages/feyzains/Panel/PanelPage';
 import CreateSnippetPage from 'pages/admin-pages/Snippet/CreateSnippetPage';
 import PaymentEntryPage from 'pages/admin-pages/feyzains/paymentEntry/PaymentEntryPage';
+import InvoiceBillPage from 'pages/admin-pages/feyzains/invoiceBill/InvoiceBillPage';
 
 import PanelProvider from 'contexts/admin/PanelContext';
 import PaymentEntryProvider from 'contexts/admin/feyzains/PaymentEntryContext';
@@ -57,6 +58,10 @@ const AdminRoutes = {
     {
       path: 'payment_entry',
       element: <PaymentEntryPage />
+    },
+    {
+      path: 'invoice_bill',
+      element: <InvoiceBillPage />
     }
   ]
 };

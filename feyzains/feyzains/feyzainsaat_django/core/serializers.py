@@ -62,6 +62,8 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = '__all__'
+    def create(self, validated_data):
+        print("validated_data", validated_data)
 
 class PaymentReadSerializer(serializers.ModelSerializer):
     created_by = UserSerializer(read_only=True)
@@ -90,10 +92,17 @@ class PersonalSerializer(serializers.ModelSerializer):
         model = Personal
         fields = '__all__'
 
+
+
+#payment_invoice serializer
+
 class PaymenInvoiceSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+
     class Meta:
         model = PaymenInvoice
         fields = '__all__'
+    
 
 class PaymenInvoiceReadSerializer(serializers.ModelSerializer):
     created_by = UserSerializer(read_only=True)

@@ -28,19 +28,19 @@ const formatNumber = (number) => {
   })} ₺`;
 };
 
-const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
+const ViewInvoiceEntry = ({ open, onClose, invoiceId }) => {
   const { getPaymentEntryInvoiceById } = useContext(PaymentEntryInvoiceContext);
   const { fetchUser } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(true);
-  const [payment, setPayment] = useState(null);
+  const [invoice, setInvoice] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (open && paymentId) {
-      fetchPaymentDetails();
+    if (open && invoiceId) {
+      fetchInvoiceDetails();
       checkAdminStatus();
     }
-  }, [open, paymentId]);
+  }, [open, invoiceId]);
 
   const checkAdminStatus = async () => {
     try {
@@ -53,15 +53,15 @@ const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
     }
   };
 
-  const fetchPaymentDetails = async () => {
+  const fetchInvoiceDetails = async () => {
     setIsLoading(true);
     try {
-      const result = await getPaymentEntryInvoiceById(paymentId);
+      const result = await getPaymentEntryInvoiceById(invoiceId);
       if (result.success) {
-        setPayment(result.data);
+        setInvoice(result.data);
       }
     } catch (error) {
-      console.error('Ödeme kaydı yüklenirken hata:', error);
+      console.error('Fatura kaydı yüklenirken hata:', error);
     } finally {
       setIsLoading(false);
     }
@@ -82,13 +82,13 @@ const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Ödeme Kaydı Detayları</DialogTitle>
+      <DialogTitle>Fatura Kaydı Detayları</DialogTitle>
       <DialogContent>
         {isLoading ? (
           <Box display="flex" justifyContent="center" my={4}>
             <CircularProgress />
           </Box>
-        ) : payment ? (
+        ) : invoice ? (
           <Paper elevation={0} sx={{ p: 2 }}>
             <Box mb={3}>
               <Typography variant="h6" gutterBottom>
@@ -96,11 +96,11 @@ const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
               </Typography>
               <Divider sx={{ mb: 2 }} />
 
-              <DetailItem label="Tarih" value={formatDate(payment.date)} />
-              <DetailItem label="Şantiye" value={payment.worksite.name} />
-              <DetailItem label="Grup" value={payment.group.name} />
-              <DetailItem label="Şirket" value={payment.company.name} />
-              <DetailItem label="Müşteri" value={payment.customer.name} />
+              <DetailItem label="Tarih" value={formatDate(invoice.date)} />
+              <DetailItem label="Şantiye" value={invoice.worksite.name} />
+              <DetailItem label="Grup" value={invoice.group.name} />
+              <DetailItem label="Şirket" value={invoice.company.name} />
+              <DetailItem label="Müşteri" value={invoice.customer.name} />
             </Box>
 
             <Box mb={3}>
@@ -109,10 +109,13 @@ const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
               </Typography>
               <Divider sx={{ mb: 2 }} />
 
-              <DetailItem label="Banka" value={payment.bank} />
-              <DetailItem label="Çek Numara" value={payment.check_no} />
-              <DetailItem label="Çek Vade" value={formatDate(payment.check_time)} />
-              <DetailItem label="Borç Tutarı" value={formatNumber(payment.debt)} />
+              <DetailItem label="Malzeme" value={invoice.material} />
+              <DetailItem label="Adet" value={invoice.quantity} />
+              <DetailItem label="Birim Fiyatı" value={formatNumber(invoice.unit_price)} />
+              <DetailItem label="Tutar" value={formatNumber(invoice.price)} />
+              <DetailItem label="Kdv" value={invoice.tax} />
+              <DetailItem label="Tevkifat" value={invoice.withholding} />
+              <DetailItem label="Receivable" value={formatNumber(invoice.receivable)} />
             </Box>
 
             <Box>
@@ -121,8 +124,8 @@ const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
               </Typography>
               <Divider sx={{ mb: 2 }} />
 
-              <DetailItem label="Oluşturulma Tarihi" value={formatDate(payment.created_date)} />
-              <DetailItem label="Oluşturan" value={payment.created_by ? payment.created_by.username : '-'} />
+              <DetailItem label="Oluşturulma Tarihi" value={formatDate(invoice.created_date)} />
+              <DetailItem label="Oluşturan" value={invoice.created_by ? invoice.created_by.username : '-'} />
             </Box>
 
             {isAdmin && (
@@ -150,4 +153,4 @@ const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
   );
 };
 
-export default ViewPaymentEntry;
+export default ViewInvoiceEntry;

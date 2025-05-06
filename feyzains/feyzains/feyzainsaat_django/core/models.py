@@ -128,7 +128,7 @@ class PaymenInvoice(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     debt = models.DecimalField(max_digits=15, decimal_places=2,null=True, blank=True)
     bank = models.CharField(max_length=255,null=True, blank=True)
-
+    type =models.CharField(max_length=50,null=True, blank=True)
     # Checklist alanları buraya eklendi
     check_time = models.DateTimeField(null=True, blank=True)
 

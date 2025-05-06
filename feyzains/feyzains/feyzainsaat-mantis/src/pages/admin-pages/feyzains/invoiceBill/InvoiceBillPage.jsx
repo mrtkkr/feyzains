@@ -31,9 +31,9 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import axios from 'axios';
 import { PUBLIC_URL } from '../../../../services/network_service';
-import CreatePaymentEntry from './CreatePaymentEntry';
-import EditPaymentEntry from './EditPaymentEntry';
-import ViewPaymentEntry from './ViewPaymentEntry';
+import CreateInvoiceBill from './CreateInvoiceBill';
+import EditInvoiceBill from './EditInvoiceBill';
+import ViewInvoiceBill from './ViewInvoiceBill';
 import { AuthContext } from 'contexts/auth/AuthContext';
 import * as XLSX from 'xlsx';
 
@@ -65,7 +65,7 @@ function getComparator(order, orderBy) {
   return order === 'desc' ? (a, b) => descendingComparator(a, b, orderBy) : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-const PaymentEntryPage = () => {
+const InvoiceBillPage = () => {
   // Context
   const { paymentEntryInvoices, loading, error, fetchPaymentEntryInvoices, deletePaymentEntryInvoice } =
     useContext(PaymentEntryInvoiceContext);
@@ -76,15 +76,15 @@ const PaymentEntryPage = () => {
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
-  const [isEditPaymentDialogOpen, setIsEditPaymentDialogOpen] = useState(false);
-  const [isCreatePaymentDialogOpen, setIsCreatePaymentDialogOpen] = useState(false);
-  const [isViewPaymentDialogOpen, setIsViewPaymentDialogOpen] = useState(false);
-  const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+  const [isEditInvoiceDialogOpen, setIsEditInvoiceDialogOpen] = useState(false);
+  const [isCreateInvoiceDialogOpen, setIsCreateInvoiceDialogOpen] = useState(false);
+  const [isViewInvoiceDialogOpen, setIsViewInvoiceDialogOpen] = useState(false);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery2, setSearchQuery2] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [paymentCount, setPaymentCount] = useState(0);
+  const [invoiceCount, setInvoiceCount] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
@@ -108,10 +108,10 @@ const PaymentEntryPage = () => {
     initializeUser();
   }, [fetchPaymentEntryInvoices]); // fetchPayments'i bağımlılık olarak ekleyin
 
-  // Ödeme sayısını güncelleme
+  // Fatura sayısını güncelleme
   useEffect(() => {
     if (paymentEntryInvoices) {
-      setPaymentCount(paymentEntryInvoices.length);
+      setInvoiceCount(paymentEntryInvoices.length);
     }
   }, [paymentEntryInvoices]);
 
@@ -130,37 +130,37 @@ const PaymentEntryPage = () => {
     setPage(0);
   };
 
-  const handleViewPaymentClick = (id) => {
-    setSelectedPaymentId(id);
-    setIsViewPaymentDialogOpen(true);
+  const handleViewInvoiceClick = (id) => {
+    setSelectedInvoiceId(id);
+    setIsViewInvoiceDialogOpen(true);
   };
 
   const handleCloseViewDialog = () => {
-    setIsViewPaymentDialogOpen(false);
-    setSelectedPaymentId(null);
+    setIsViewInvoiceDialogOpen(false);
+    setSelectedInvoiceId(null);
   };
 
-  const handleEditPaymentClick = (id) => {
-    setSelectedPaymentId(id);
-    setIsEditPaymentDialogOpen(true);
+  const handleEditInvoiceClick = (id) => {
+    setSelectedInvoiceId(id);
+    setIsEditInvoiceDialogOpen(true);
   };
 
-  const handleEditPayment = () => {
-    setIsEditPaymentDialogOpen(false);
-    setSelectedPaymentId(null);
+  const handleEditInvoice = () => {
+    setIsEditInvoiceDialogOpen(false);
+    setSelectedInvoiceId(null);
     // Trigger a refresh only when needed
     setRefreshTrigger((prev) => prev + 1);
   };
 
-  const handleDeletePayment = async (id) => {
-    if (window.confirm('Bu ödeme kaydını silmek istediğinizden emin misiniz?')) {
+  const handleDeleteInvoice = async (id) => {
+    if (window.confirm('Bu fatura kaydını silmek istediğinizden emin misiniz?')) {
       try {
         const response = await deletePaymentEntryInvoice(id);
         if (response && response.success) {
-          toast.success('Ödeme kaydı başarıyla silindi');
+          toast.success('Fatura kaydı başarıyla silindi');
           // We don't need to fetch again as deletePayment updates the local state
         } else {
-          toast.error(response?.error || 'Ödeme kaydı silinemedi');
+          toast.error(response?.error || 'Fatura kaydı silinemedi');
         }
       } catch (error) {
         console.error('Silme işlemi sırasında hata:', error);
@@ -175,7 +175,7 @@ const PaymentEntryPage = () => {
   };
 
   const handleCreateDialogClose = () => {
-    setIsCreatePaymentDialogOpen(false);
+    setIsCreateInvoiceDialogOpen(false);
     // Trigger a refresh only when needed
     setRefreshTrigger((prev) => prev + 1);
   };
@@ -208,7 +208,7 @@ const PaymentEntryPage = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      toast.success('Ödeme kayıtları başarıyla yüklendi!');
+      toast.success('Fatura kayıtları başarıyla yüklendi!');
       setSelectedFile(null); // Dosyayı sıfırla
 
       // Dosya input elementini sıfırla
@@ -231,7 +231,7 @@ const PaymentEntryPage = () => {
   const exportToExcel = async () => {
     try {
       if (!paymentEntryInvoices || paymentEntryInvoices.length === 0) {
-        toast.warning('Excel için ödeme verisi bulunamadı!');
+        toast.warning('Excel için fatura verisi bulunamadı!');
         return;
       }
 
@@ -241,11 +241,13 @@ const PaymentEntryPage = () => {
         Grup: paymentEntryInvoice.group?.name || '-',
         Şirket: paymentEntryInvoice.company?.name || '-',
         Müşteri: paymentEntryInvoice.customer?.name || '-',
-        Banka: paymentEntryInvoice.bank || '-',
-        'Çek No': paymentEntryInvoice.check_no || '-',
-        'Çek Vade': paymentEntryInvoice.check_time ? formatDate(paymentEntryInvoice.check_time) : '-',
-        'Borç Tutarı': formatNumber(paymentEntryInvoice.debt),
-        'Oluşturma Tarihi': formatDate(paymentEntryInvoice.created_date),
+        Malzeme: paymentEntryInvoice.material || '-',
+        Adet: paymentEntryInvoice.quantity || '-',
+        'Birim Fiyatı': formatNumber(paymentEntryInvoice.unit_price),
+        Tutar: formatNumber(paymentEntryInvoice.price),
+        KDV: paymentEntryInvoice.tax || '-',
+        Tevkifat: paymentEntryInvoice.withholding || '-',
+        Alacak: paymentEntryInvoice.receivable || '-',
         Oluşturan: paymentEntryInvoice.created_by?.username || '-'
       }));
 
@@ -258,12 +260,13 @@ const PaymentEntryPage = () => {
         { wch: 15 }, // Grup
         { wch: 20 }, // Şirket
         { wch: 20 }, // Müşteri
-        { wch: 15 }, // Banka
-        { wch: 15 }, // Check No
-        { wch: 15 }, // Check Vade
-        { wch: 15 }, // Borç Tutarı
-        { wch: 25 }, // Oluşturma Tarihi
-        { wch: 20 } // Oluşturan
+        { wch: 15 }, // Malzeme
+        { wch: 12 }, // Adet
+        { wch: 15 }, // Birim Fiyatı
+        { wch: 15 }, // Tutar
+        { wch: 20 }, // KDV
+        { wch: 20 }, // Tevkifat
+        { wch: 25 } // Oluşturan
       ];
 
       // Header'ı bold yapmak için manuel hücre formatı
@@ -289,74 +292,88 @@ const PaymentEntryPage = () => {
     }
   };
 
-  const filteredPayments = useMemo(() => {
+  const filteredInvoices = useMemo(() => {
     if (!paymentEntryInvoices) return [];
 
-    const searchLower = (searchQuery || '').toLowerCase();
+    const searchLower = (searchQuery2 || '').toLowerCase();
 
     return paymentEntryInvoices.filter((paymentEntryInvoice) => {
       const worksiteName = paymentEntryInvoice?.worksite?.name?.toLowerCase() || '';
+      const groupName = paymentEntryInvoice?.group?.name?.toLowerCase() || '';
       const companyName = paymentEntryInvoice?.company?.name?.toLowerCase() || '';
       const customerName = paymentEntryInvoice?.customer?.name?.toLowerCase() || '';
-      const bank = (paymentEntryInvoice?.bank || '').toLowerCase();
-      const debt = paymentEntryInvoice?.debt?.toString() || '';
-      const groupName = paymentEntryInvoice?.group?.name?.toLowerCase() || '';
+      const material = (paymentEntryInvoice?.material || '').toLowerCase();
+      const quantity = paymentEntryInvoice?.quantity?.toString() || '';
+      const unitPrice = paymentEntryInvoice?.unit_price?.toString() || '';
+      const price = paymentEntryInvoice?.price?.toString() || '';
+      const tax = paymentEntryInvoice?.tax?.toString() || '';
+      const withholding = paymentEntryInvoice?.withholding?.toString() || '';
+      const receivable = paymentEntryInvoice?.receivable?.toString() || '';
+      const createdBy = paymentEntryInvoice?.created_by?.username?.toLowerCase() || '';
+      const date = paymentEntryInvoice?.date || '';
 
       return (
         worksiteName.includes(searchLower) ||
+        groupName.includes(searchLower) ||
         companyName.includes(searchLower) ||
         customerName.includes(searchLower) ||
-        bank.includes(searchLower) ||
-        debt.includes(searchLower) ||
-        groupName.includes(searchLower)
+        material.includes(searchLower) ||
+        quantity.includes(searchLower) ||
+        unitPrice.includes(searchLower) ||
+        price.includes(searchLower) ||
+        tax.includes(searchLower) ||
+        withholding.includes(searchLower) ||
+        receivable.includes(searchLower) ||
+        createdBy.includes(searchLower) ||
+        date.includes(searchLower)
       );
     });
-  }, [paymentEntryInvoices, searchQuery]);
+  }, [paymentEntryInvoices, searchQuery2]);
 
-  const visiblePaymentRows = useMemo(() => {
-    return filteredPayments.sort(getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [filteredPayments, order, orderBy, page, rowsPerPage]);
+  const visibleInvoiceRows = useMemo(() => {
+    return filteredInvoices.sort(getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [filteredInvoices, order, orderBy, page, rowsPerPage]);
 
   // IMPORTANT: Using memoized props to pass to child components
-  const viewPaymentProps = useMemo(
+  const viewInvoiceProps = useMemo(
     () => ({
-      open: isViewPaymentDialogOpen,
+      open: isViewInvoiceDialogOpen,
       onClose: handleCloseViewDialog,
-      paymentId: selectedPaymentId
+      invoiceId: selectedInvoiceId
     }),
-    [isViewPaymentDialogOpen, selectedPaymentId]
+    [isViewInvoiceDialogOpen, selectedInvoiceId]
   );
 
-  const editPaymentProps = useMemo(
+  const editInvoiceProps = useMemo(
     () => ({
-      open: isEditPaymentDialogOpen,
-      onClose: handleEditPayment,
-      paymentId: selectedPaymentId
+      open: isEditInvoiceDialogOpen,
+      onClose: handleEditInvoice,
+      invoiceId: selectedInvoiceId
     }),
-    [isEditPaymentDialogOpen, selectedPaymentId]
+    [isEditInvoiceDialogOpen, selectedInvoiceId]
   );
 
-  const createPaymentProps = useMemo(
+  const createInvoiceProps = useMemo(
     () => ({
-      open: isCreatePaymentDialogOpen,
+      open: isCreateInvoiceDialogOpen,
       onClose: handleCreateDialogClose
     }),
-    [isCreatePaymentDialogOpen]
+    [isCreateInvoiceDialogOpen]
   );
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" component="h1">
-          Ödeme Kayıtları
+          Fatura Kayıtları
         </Typography>
         <Box display="flex" alignItems="center">
           <TextField
             variant="outlined"
             size="small"
-            placeholder="Ödeme Ara..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Fatura Ara..."
+            value={searchQuery2}
+            onChange={(e) => setSearchQuery2(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -392,10 +409,10 @@ const PaymentEntryPage = () => {
                 color="primary"
                 size="small"
                 startIcon={<AddIcon />}
-                onClick={() => setIsCreatePaymentDialogOpen(true)}
+                onClick={() => setIsCreateInvoiceDialogOpen(true)}
                 sx={{ ml: 2 }}
               >
-                Ödeme Ekle
+                Fatura Ekle
               </Button>
             </>
           )}
@@ -413,11 +430,11 @@ const PaymentEntryPage = () => {
       ) : (
         <>
           {/* Modal'ların koşullu renderlanması - Optimized with memoized props */}
-          {isCreatePaymentDialogOpen && <CreatePaymentEntry {...createPaymentProps} />}
+          {isCreateInvoiceDialogOpen && <CreateInvoiceBill {...createInvoiceProps} />}
 
-          {isEditPaymentDialogOpen && selectedPaymentId && <EditPaymentEntry {...editPaymentProps} />}
+          {isEditInvoiceDialogOpen && selectedInvoiceId && <EditInvoiceBill {...editInvoiceProps} />}
 
-          {isViewPaymentDialogOpen && selectedPaymentId && <ViewPaymentEntry {...viewPaymentProps} />}
+          {isViewInvoiceDialogOpen && selectedInvoiceId && <ViewInvoiceBill {...viewInvoiceProps} />}
 
           <TableContainer component={Paper}>
             <Table>
@@ -428,43 +445,49 @@ const PaymentEntryPage = () => {
                   <TableCell>Grup</TableCell>
                   <TableCell>Şirket</TableCell>
                   <TableCell>Müşteri</TableCell>
-                  <TableCell>Banka</TableCell>
-                  <TableCell>Çek No</TableCell>
-                  <TableCell>Çek Vade</TableCell>
-                  <TableCell>Borç</TableCell>
+                  <TableCell>Malzeme</TableCell>
+                  <TableCell>Adet</TableCell>
+                  <TableCell>Birim Fiyatı</TableCell>
+                  <TableCell>Tutar</TableCell>
+                  <TableCell>KDV</TableCell>
+                  <TableCell>Tevkifat</TableCell>
+                  <TableCell>Alacak</TableCell>
                   <TableCell align="right">İşlemler</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {visiblePaymentRows.filter((row) => row.type === 'payment').length > 0 ? (
-                  visiblePaymentRows
-                    .filter((row) => row.type === 'payment')
-                    .map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell>{formatDate(payment.date)}</TableCell>
-                        <TableCell>{payment.worksite?.name || '-'}</TableCell>
-                        <TableCell>{payment.group?.name || '-'}</TableCell>
-                        <TableCell>{payment.company?.name || '-'}</TableCell>
-                        <TableCell>{payment.customer?.name || '-'}</TableCell>
-                        <TableCell>{payment.bank || '-'}</TableCell>
-                        <TableCell>{payment.check_no || '-'}</TableCell>
-                        <TableCell>{formatDate(payment.check_time)}</TableCell>
-                        <TableCell>{formatNumber(payment.debt)}</TableCell>
+                {visibleInvoiceRows.filter((row) => row.type === 'invoice').length > 0 ? (
+                  visibleInvoiceRows
+                    .filter((row) => row.type === 'invoice')
+                    .map((paymentEntryInvoices) => (
+                      <TableRow key={paymentEntryInvoices.id}>
+                        <TableCell>{formatDate(paymentEntryInvoices.date)}</TableCell>
+                        <TableCell>{paymentEntryInvoices.worksite?.name || '-'}</TableCell>
+                        <TableCell>{paymentEntryInvoices.group?.name || '-'}</TableCell>
+                        <TableCell>{paymentEntryInvoices.company?.name || '-'}</TableCell>
+                        <TableCell>{paymentEntryInvoices.customer?.name || '-'}</TableCell>
+                        <TableCell>{paymentEntryInvoices.material || '-'}</TableCell>
+                        <TableCell>{paymentEntryInvoices.quantity || '-'}</TableCell>
+                        <TableCell>{formatNumber(paymentEntryInvoices.unit_price)}</TableCell>
+                        <TableCell>{formatNumber(paymentEntryInvoices.price)}</TableCell>
+                        <TableCell>{paymentEntryInvoices.tax || '-'}</TableCell>
+                        <TableCell>{paymentEntryInvoices.withholding || '-'}</TableCell>
+                        <TableCell>{paymentEntryInvoices.receivable || '-'}</TableCell>
                         <TableCell align="right">
                           <Tooltip title="Detay">
-                            <IconButton onClick={() => handleViewPaymentClick(payment.id)}>
+                            <IconButton onClick={() => handleViewInvoiceClick(paymentEntryInvoices.id)}>
                               <VisibilityIcon />
                             </IconButton>
                           </Tooltip>
                           {isAdmin && (
                             <>
                               <Tooltip title="Düzenle">
-                                <IconButton onClick={() => handleEditPaymentClick(payment.id)}>
+                                <IconButton onClick={() => handleEditInvoiceClick(paymentEntryInvoices.id)}>
                                   <EditIcon />
                                 </IconButton>
                               </Tooltip>
                               <Tooltip title="Sil">
-                                <IconButton onClick={() => handleDeletePayment(payment.id)}>
+                                <IconButton onClick={() => handleDeleteInvoice(paymentEntryInvoices.id)}>
                                   <DeleteIcon />
                                 </IconButton>
                               </Tooltip>
@@ -475,9 +498,9 @@ const PaymentEntryPage = () => {
                     ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={10} align="center">
+                    <TableCell colSpan={13} align="center">
                       <Typography variant="body1" py={2}>
-                        {searchQuery ? 'Arama kriterlerinize uygun ödeme kaydı bulunamadı.' : 'Henüz ödeme kaydı bulunmamaktadır.'}
+                        {searchQuery2 ? 'Arama kriterlerinize uygun fatura kaydı bulunamadı.' : 'Henüz fatura kaydı bulunmamaktadır.'}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -488,7 +511,7 @@ const PaymentEntryPage = () => {
           <TablePagination
             rowsPerPageOptions={[10, 25, 50]}
             component="div"
-            count={filteredPayments.length}
+            count={filteredInvoices.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -502,4 +525,4 @@ const PaymentEntryPage = () => {
   );
 };
 
-export default PaymentEntryPage;
+export default InvoiceBillPage;

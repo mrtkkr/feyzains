@@ -22,9 +22,8 @@ import { tr } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import { sendApiRequest } from '../../../../services/network_service';
-import { create } from 'lodash';
 
-const CreatePaymentEntry = ({ open, onClose }) => {
+const CreateInvoiceEntry = ({ open, onClose }) => {
   const { createPaymentEntryInvoice, loading } = useContext(PaymentEntryInvoiceContext);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,10 +37,13 @@ const CreatePaymentEntry = ({ open, onClose }) => {
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [debt, setDebt] = useState('');
-  const [bank, setBank] = useState('');
-  const [check_no, setCheck_no] = useState('');
-  const [check_time, setCheck_time] = useState('');
+  const [material, setMaterial] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [unit_price, setUnit_price] = useState('');
+  const [price, setPrice] = useState('');
+  const [tax, setTax] = useState('');
+  const [withholding, setWithholding] = useState('');
+  const [receivable, setReceivable] = useState('');
 
   // Validation errors
   const [errors, setErrors] = useState({});
@@ -120,12 +122,19 @@ const CreatePaymentEntry = ({ open, onClose }) => {
     if (!selectedGroup) newErrors.group = 'Grup seçimi gereklidir';
     if (!selectedCompany) newErrors.company = 'Şirket seçimi gereklidir';
     if (!selectedCustomer) newErrors.customer = 'Müşteri seçimi gereklidir';
-    if (!bank) newErrors.bank = 'Banka bilgisi gereklidir';
-    if (!check_no) newErrors.check_no = 'Check Numarası bilgisi gereklidir';
-    if (!check_time) newErrors.check_time = 'Check Vade bilgisi gereklidir';
-
-    if (!debt) newErrors.debt = 'Borç tutarı gereklidir';
-    else if (isNaN(debt) || parseFloat(debt) <= 0) newErrors.debt = 'Geçerli bir borç tutarı giriniz';
+    if (!material) newErrors.material = 'Malzeme adı gereklidir';
+    if (!quantity) newErrors.quantity = 'Miktar gereklidir';
+    else if (isNaN(quantity) || parseFloat(quantity) <= 0) newErrors.quantity = 'Geçerli bir miktar giriniz';
+    if (!unit_price) newErrors.unit_price = 'Birim fiyat gereklidir';
+    else if (isNaN(unit_price) || parseFloat(unit_price) <= 0) newErrors.unit_price = 'Geçerli bir birim fiyat giriniz';
+    if (!price) newErrors.price = 'Toplam fiyat gereklidir';
+    else if (isNaN(price) || parseFloat(price) <= 0) newErrors.price = 'Geçerli bir toplam fiyat giriniz';
+    if (!tax) newErrors.tax = 'KDV oranı gereklidir';
+    else if (isNaN(tax) || parseFloat(tax) < 0) newErrors.tax = 'Geçerli bir KDV oranı giriniz';
+    if (!withholding) newErrors.withholding = 'Stopaj oranı gereklidir';
+    else if (isNaN(withholding) || parseFloat(withholding) < 0) newErrors.withholding = 'Geçerli bir stopaj oranı giriniz';
+    if (!receivable) newErrors.receivable = 'Alacak tutarı gereklidir';
+    else if (isNaN(receivable) || parseFloat(receivable) < 0) newErrors.receivable = 'Geçerli bir alacak tutarı giriniz';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -137,31 +146,34 @@ const CreatePaymentEntry = ({ open, onClose }) => {
     setIsSubmitting(true);
 
     try {
-      const paymentData = {
+      const invoiceData = {
         date: date.toISOString(),
         worksite: selectedWorksite,
         group: selectedGroup,
         company: selectedCompany,
         customer: selectedCustomer,
-        check_no: check_no,
-        check_time: check_time,
-        bank: bank,
-        debt: parseFloat(debt),
-        type: 'payment'
+        material: material,
+        quantity: parseFloat(quantity),
+        unit_price: parseFloat(unit_price),
+        price: parseFloat(price),
+        tax: parseFloat(tax),
+        withholding: parseFloat(withholding),
+        receivable: parseFloat(receivable),
+        type: 'invoice'
       };
 
-      const result = await createPaymentEntryInvoice(paymentData);
+      const result = await createPaymentEntryInvoice(invoiceData);
 
       if (result.success) {
-        toast.success('Ödeme kaydı başarıyla oluşturuldu');
+        toast.success('Fatura kaydı başarıyla oluşturuldu');
         resetForm();
         onClose();
       } else {
-        toast.error(result.error || 'Ödeme kaydı oluşturulamadı');
+        toast.error(result.error || 'Fatura kaydı oluşturulamadı');
       }
     } catch (error) {
-      console.error('Ödeme kaydı oluşturulurken hata:', error);
-      toast.error('Ödeme kaydı oluşturulurken bir hata oluştu');
+      console.error('Fatura kaydı oluşturulurken hata:', error);
+      toast.error('Fatura kaydı oluşturulurken bir hata oluştu');
     } finally {
       setIsSubmitting(false);
     }
@@ -173,10 +185,13 @@ const CreatePaymentEntry = ({ open, onClose }) => {
     setSelectedGroup('');
     setSelectedCompany('');
     setSelectedCustomer('');
-    setBank('');
-    setCheck_no('');
-    setCheck_time('');
-    setDebt('');
+    setMaterial('');
+    setQuantity('');
+    setUnit_price('');
+    setPrice('');
+    setTax('');
+    setWithholding('');
+    setReceivable('');
     setErrors({});
   };
 
@@ -187,7 +202,7 @@ const CreatePaymentEntry = ({ open, onClose }) => {
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>Yeni Ödeme Kaydı Oluştur</DialogTitle>
+      <DialogTitle>Yeni Fatura Kaydı Oluştur</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12} md={6}>
@@ -259,49 +274,87 @@ const CreatePaymentEntry = ({ open, onClose }) => {
 
           <Grid item xs={12} md={6}>
             <TextField
-              label="Banka"
+              label="Malzeme Adı"
               fullWidth
-              value={bank}
-              onChange={(e) => setBank(e.target.value)}
-              error={!!errors.bank}
-              helperText={errors.bank}
+              value={material}
+              onChange={(e) => setMaterial(e.target.value)}
+              error={!!errors.material}
+              helperText={errors.material}
             />
           </Grid>
 
           <Grid item xs={12} md={6}>
             <TextField
-              label="Çek Numarası"
-              fullWidth
-              value={check_no}
-              onChange={(e) => setCheck_no(e.target.value)}
-              error={!!errors.check_no}
-              helperText={errors.check_no}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="Çek Vade"
-              type="date"
-              fullWidth
-              value={check_time}
-              onChange={(e) => setCheck_time(e.target.value)}
-              InputLabelProps={{ shrink: true }}
-              error={!!errors.check_time}
-              helperText={errors.check_time}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <TextField
-              label="Borç Tutarı"
+              label="Adet"
               type="number"
               fullWidth
-              value={debt}
-              onChange={(e) => setDebt(e.target.value)}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
               InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-              error={!!errors.debt}
-              helperText={errors.debt}
+              error={!!errors.quantity}
+              helperText={errors.quantity}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Birim Fiyat"
+              type="number"
+              fullWidth
+              value={unit_price}
+              onChange={(e) => setUnit_price(e.target.value)}
+              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+              error={!!errors.unit_price}
+              helperText={errors.unit_price}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Tutar"
+              type="number"
+              fullWidth
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+              error={!!errors.price}
+              helperText={errors.price}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="KDV Oranı"
+              type="number"
+              fullWidth
+              value={tax}
+              onChange={(e) => setTax(e.target.value)}
+              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+              error={!!errors.tax}
+              helperText={errors.tax}
+            />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Tevkifat Oranı"
+              type="number"
+              fullWidth
+              value={withholding}
+              onChange={(e) => setWithholding(e.target.value)}
+              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+              error={!!errors.withholding}
+              helperText={errors.withholding}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <TextField
+              label="Alacak Tutarı"
+              type="number"
+              fullWidth
+              value={receivable}
+              onChange={(e) => setReceivable(e.target.value)}
+              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+              error={!!errors.receivable}
+              helperText={errors.receivable}
             />
           </Grid>
         </Grid>
@@ -318,4 +371,4 @@ const CreatePaymentEntry = ({ open, onClose }) => {
   );
 };
 
-export default CreatePaymentEntry;
+export default CreateInvoiceEntry;

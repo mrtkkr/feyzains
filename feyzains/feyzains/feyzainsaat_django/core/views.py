@@ -164,6 +164,44 @@ class CustomerDetailView(APIView):
         customer.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class PaymentView(APIView):
+    
+
+    def get(self, request):
+        payments = Payment.objects.all().order_by('-id')
+        serializer = PaymentReadSerializer(payments, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = PaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            print("usercık",request.user)
+            serializer.save(created_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class PaymentDetailView(APIView):
+    
+
+    def get(self, request, pk):
+        payment = get_object_or_404(Payment, pk=pk)
+        serializer = PaymentSerializer(payment)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        payment = get_object_or_404(Payment, pk=pk)
+        serializer = PaymentSerializer(payment, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        payment = get_object_or_404(Payment, pk=pk)
+        payment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 # --- Personal Views ---
 class PersonalView(APIView):
@@ -211,7 +249,7 @@ class PaymenInvoiceView(APIView):
     def post(self, request):
         serializer = PaymenInvoiceSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(created_by=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -236,39 +274,3 @@ class PaymenInvoiceDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class PaymentView(APIView):
-    
-
-    def get(self, request):
-        payments = Payment.objects.all().order_by('-id')
-        serializer = PaymentReadSerializer(payments, many=True)
-        return Response(serializer.data)
-
-    def post(self, request):
-        serializer = PaymentSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(created_by=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
-class PaymentDetailView(APIView):
-    
-
-    def get(self, request, pk):
-        payment = get_object_or_404(Payment, pk=pk)
-        serializer = PaymentSerializer(payment)
-        return Response(serializer.data)
-
-    def put(self, request, pk):
-        payment = get_object_or_404(Payment, pk=pk)
-        serializer = PaymentSerializer(payment, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk):
-        payment = get_object_or_404(Payment, pk=pk)
-        payment.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
