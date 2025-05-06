@@ -20,11 +20,11 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { tr } from 'date-fns/locale';
 import { toast } from 'react-toastify';
-import { PaymentEntryContext } from '../../../../contexts/admin/feyzains/PaymentEntryContext';
+import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import { sendApiRequest } from '../../../../services/network_service';
 
 const CreatePaymentEntry = ({ open, onClose }) => {
-  const { createPayment, loading } = useContext(PaymentEntryContext);
+  const { createPaymentEntryInvoice, loading } = useContext(PaymentEntryInvoiceContext);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form alanları için state'ler
@@ -148,7 +148,7 @@ const CreatePaymentEntry = ({ open, onClose }) => {
         debt: parseFloat(debt)
       };
 
-      const result = await createPayment(paymentData);
+      const result = await createPaymentEntryInvoice(paymentData);
 
       if (result.success) {
         toast.success('Ödeme kaydı başarıyla oluşturuldu');

@@ -5,7 +5,7 @@ import { sendApiRequest } from 'services/network_service'; // API çağrıları 
 export const PaymentEntryInvoiceContext = createContext();
 
 const PaymentEntryInvoiceProvider = ({ children }) => {
-  const [paymentEntryInvoice, setPaymentEntryInvoice] = useState([]);
+  const [paymentEntryInvoices, setPaymentEntryInvoice] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   // Add a flag to track whether data has been loaded
@@ -15,7 +15,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
   const paymentEntryInvoiceListUrl = 'payment_entry_invoice/';
   const paymentEntryInvoiceDetailUrl = 'payment_invoices/';
 
-  const fetchPaymentEntryInvoice = useCallback(async (forceRefresh = false) => {
+  const fetchPaymentEntryInvoices = useCallback(async (forceRefresh = false) => {
     // Skip fetching if data is already loaded and forceRefresh is false
     if (dataLoaded.current && !forceRefresh) {
       return;
@@ -36,7 +36,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
         setError('Ödeme Girişi veya Faturalar alınırken bir hata oluştu.');
       }
     } catch (error) {
-      console.error('fetchPaymentEntryInvoice error:', error);
+      console.error('fetchPaymentEntryInvoices error:', error);
       setError('API çağrısı başarısız oldu.');
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
       if (res.response.status === 200) {
         // Update the payment in the local state to avoid refetching
         setPaymentEntryInvoice((prev) =>
-          prev.map((paymentEntryInvoice) => (paymentEntryInvoice.id === id ? res.data : paymentEntryInvoice))
+          prev.map((paymentEntryInvoices) => (paymentEntryInvoices.id === id ? res.data : paymentEntryInvoices))
         );
         return { success: true, data: res.data };
       } else {
@@ -107,7 +107,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
 
       // Eğer res.response varsa ve status 204 ise işlem başarılı
       if (res?.response?.status === 204) {
-        setPayments((prev) => prev.filter((paymentEntryInvoice) => paymentEntryInvoice.id !== id));
+        setPayments((prev) => prev.filter((paymentEntryInvoices) => paymentEntryInvoices.id !== id));
         return { success: true };
       } else {
         const errorMessage = res?.response?.data?.detail || 'Ödeme veya Fatura silinemedi.';
@@ -125,7 +125,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
 
   const getPaymentEntryInvoiceById = async (id) => {
     // First check if we have the payment in local state
-    const localPaymentEntryInvoicet = paymentEntryInvoice.find((paymentEntryInvoice) => paymentEntryInvoice.id === id);
+    const localPaymentEntryInvoicet = paymentEntryInvoices.find((paymentEntryInvoices) => paymentEntryInvoices.id === id);
     if (localPaymentEntryInvoicet) {
       return { success: true, data: localPaymentEntryInvoicet };
     }
@@ -156,10 +156,10 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
   return (
     <PaymentEntryInvoiceContext.Provider
       value={{
-        paymentEntryInvoice,
+        paymentEntryInvoices,
         loading,
         error,
-        fetchPaymentEntryInvoice,
+        fetchPaymentEntryInvoices,
         createPaymentEntryInvoice,
         updatePaymentEntryInvoice,
         deletePaymentEntryInvoice,

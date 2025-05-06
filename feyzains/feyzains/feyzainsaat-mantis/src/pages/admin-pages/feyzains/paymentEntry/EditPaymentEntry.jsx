@@ -19,11 +19,11 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { tr } from 'date-fns/locale';
 import { toast } from 'react-toastify';
-import { PaymentEntryContext } from '../../../../contexts/admin/feyzains/PaymentEntryContext';
+import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import { sendApiRequest } from '../../../../services/network_service';
 
 const EditPaymentEntry = ({ open, onClose, paymentId }) => {
-  const { updatePayment, getPaymentById, loading } = useContext(PaymentEntryContext);
+  const { updatePaymentEntryInvoice, getPaymentEntryInvoiceById, loading } = useContext(PaymentEntryInvoiceContext);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -70,7 +70,7 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
 
   const loadPaymentDetails = async () => {
     try {
-      const result = await getPaymentById(paymentId);
+      const result = await getPaymentEntryInvoiceById(paymentId);
       if (result.success) {
         const payment = result.data;
         setDate(new Date(payment.date));
@@ -80,7 +80,17 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
         setSelectedCustomer(payment.customer.id);
         setBank(payment.bank);
         setCheck_no(payment.check_no);
-        setCheck_time(payment.check_time);
+        // check_time için format düzeltmesi yapıyoruz
+        if (payment.check_time) {
+          // ISO string'i YYYY-MM-DD formatına dönüştür
+          const checkTimeDate = new Date(payment.check_time);
+          const formattedCheckTime = checkTimeDate.toISOString().split('T')[0];
+          console.log('Original check_time:', payment.check_time);
+          console.log('Formatted check_time:', formattedCheckTime);
+          setCheck_time(formattedCheckTime);
+        } else {
+          setCheck_time('');
+        }
         setDebt(payment.debt);
       } else {
         toast.error('Ödeme kaydı bulunamadı');
@@ -110,7 +120,7 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
   const loadGroups = async () => {
     try {
       const res = await sendApiRequest({
-        url: 'core/groups/',
+        url: 'core/group/',
         method: 'GET'
       });
       if (res.response.status === 200) {
@@ -124,7 +134,7 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
   const loadCompanies = async () => {
     try {
       const res = await sendApiRequest({
-        url: 'core/companies/',
+        url: 'core/company/',
         method: 'GET'
       });
       if (res.response.status === 200) {
@@ -138,7 +148,7 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
   const loadCustomers = async () => {
     try {
       const res = await sendApiRequest({
-        url: 'core/customers/',
+        url: 'core/customer/',
         method: 'GET'
       });
       if (res.response.status === 200) {
@@ -185,7 +195,7 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
         debt: parseFloat(debt)
       };
 
-      const result = await updatePayment(paymentId, paymentData);
+      const result = await updatePaymentEntryInvoice(paymentId, paymentData);
 
       if (result.success) {
         toast.success('Ödeme kaydı başarıyla güncellendi');
@@ -307,9 +317,11 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
                 fullWidth
                 value={check_time}
                 onChange={(e) => setCheck_time(e.target.value)}
-                InputLabelProps={{ shrink: true }}
                 error={!!errors.check_time}
                 helperText={errors.check_time}
+                InputLabelProps={{
+                  shrink: true
+                }}
               />
             </Grid>
 

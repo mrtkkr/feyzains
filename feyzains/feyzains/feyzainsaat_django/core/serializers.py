@@ -89,3 +89,19 @@ class PersonalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Personal
         fields = '__all__'
+
+class PaymenInvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymenInvoice
+        fields = '__all__'
+
+class PaymenInvoiceReadSerializer(serializers.ModelSerializer):
+    created_by = UserSerializer(read_only=True)
+    worksite = WorksiteSerializer()
+    group = GroupSerializer()
+    company = CompanySerializer()
+    customer = CustomerSerializer()
+
+    class Meta:
+        model = PaymenInvoice
+        fields = '__all__'

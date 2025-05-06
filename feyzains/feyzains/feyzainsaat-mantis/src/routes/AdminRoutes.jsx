@@ -14,6 +14,7 @@ import GroupProvider from 'contexts/admin/feyzains/GroupContext';
 import CompanyProvider from 'contexts/admin/feyzains/CompanyContext';
 import CustomerProvider from 'contexts/admin/feyzains/CustomerContext';
 import PersonalProvider from 'contexts/admin/feyzains/PersonalContext';
+import PaymentEntryInvoiceProvider from 'contexts/admin/feyzains/PaymentEntryInvoiceContext';
 
 const AdminRoutes = {
   path: '/',
@@ -21,19 +22,21 @@ const AdminRoutes = {
     <LoginCheck>
       <PanelProvider>
         <SnippetProvider>
-          <PaymentEntryProvider>
-            <WorksiteProvider>
-              <GroupProvider>
-                <CompanyProvider>
-                  <CustomerProvider>
-                    <PersonalProvider>
-                      <Dashboard />
-                    </PersonalProvider>
-                  </CustomerProvider>
-                </CompanyProvider>
-              </GroupProvider>
-            </WorksiteProvider>
-          </PaymentEntryProvider>
+          <PaymentEntryInvoiceProvider>
+            <PaymentEntryProvider>
+              <WorksiteProvider>
+                <GroupProvider>
+                  <CompanyProvider>
+                    <CustomerProvider>
+                      <PersonalProvider>
+                        <Dashboard />
+                      </PersonalProvider>
+                    </CustomerProvider>
+                  </CompanyProvider>
+                </GroupProvider>
+              </WorksiteProvider>
+            </PaymentEntryProvider>
+          </PaymentEntryInvoiceProvider>
         </SnippetProvider>
       </PanelProvider>
     </LoginCheck>

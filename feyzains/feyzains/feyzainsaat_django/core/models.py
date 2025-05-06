@@ -139,7 +139,7 @@ class PaymenInvoice(models.Model):
     quantity = models.IntegerField(null=True, blank=True)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
-    tax = models.DecimalField(max_digits=10, decimal_places=2)
+    tax = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     withholding = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     receivable = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
 

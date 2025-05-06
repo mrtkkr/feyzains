@@ -28,7 +28,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { PaymentEntryContext } from '../../../../contexts/admin/feyzains/PaymentEntryContext';
+import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import axios from 'axios';
 import { PUBLIC_URL } from '../../../../services/network_service';
 import CreatePaymentEntry from './CreatePaymentEntry';
@@ -67,7 +67,8 @@ function getComparator(order, orderBy) {
 
 const PaymentEntryPage = () => {
   // Context
-  const { payments, loading, error, fetchPayments, deletePayment } = useContext(PaymentEntryContext);
+  const { paymentEntryInvoices, loading, error, fetchPaymentEntryInvoices, deletePaymentEntryInvoice } =
+    useContext(PaymentEntryInvoiceContext);
   const { fetchUser } = useContext(AuthContext);
 
   // States
@@ -88,7 +89,7 @@ const PaymentEntryPage = () => {
 
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
   useEffect(() => {
-    fetchPayments();
+    fetchPaymentEntryInvoices();
 
     // Kullanıcı bilgilerini al
     const initializeUser = async () => {
@@ -105,14 +106,14 @@ const PaymentEntryPage = () => {
     };
 
     initializeUser();
-  }, [fetchPayments]); // fetchPayments'i bağımlılık olarak ekleyin
+  }, [fetchPaymentEntryInvoices]); // fetchPayments'i bağımlılık olarak ekleyin
 
   // Ödeme sayısını güncelleme
   useEffect(() => {
-    if (payments) {
-      setPaymentCount(payments.length);
+    if (paymentEntryInvoices) {
+      setPaymentCount(paymentEntryInvoices.length);
     }
-  }, [payments]);
+  }, [paymentEntryInvoices]);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -154,7 +155,7 @@ const PaymentEntryPage = () => {
   const handleDeletePayment = async (id) => {
     if (window.confirm('Bu ödeme kaydını silmek istediğinizden emin misiniz?')) {
       try {
-        const response = await deletePayment(id);
+        const response = await deletePaymentEntryInvoice(id);
         if (response && response.success) {
           toast.success('Ödeme kaydı başarıyla silindi');
           // We don't need to fetch again as deletePayment updates the local state
@@ -180,8 +181,8 @@ const PaymentEntryPage = () => {
   };
 
   const refreshData = useCallback(() => {
-    fetchPayments(true); // Force refresh
-  }, [fetchPayments]);
+    fetchPaymentEntryInvoices(true); // Force refresh
+  }, [fetchPaymentEntryInvoices]);
 
   // Use the refresh trigger to control when to refresh data
   useEffect(() => {
@@ -229,23 +230,23 @@ const PaymentEntryPage = () => {
 
   const exportToExcel = async () => {
     try {
-      if (!payments || payments.length === 0) {
+      if (!paymentEntryInvoices || paymentEntryInvoices.length === 0) {
         toast.warning('Excel için ödeme verisi bulunamadı!');
         return;
       }
 
-      const data = payments.map((payment) => ({
-        Tarih: formatDate(payment.date),
-        Şantiye: payment.worksite?.name || '-',
-        Grup: payment.group?.name || '-',
-        Şirket: payment.company?.name || '-',
-        Müşteri: payment.customer?.name || '-',
-        Banka: payment.bank || '-',
-        'Çek No': payment.check_no || '-',
-        'Çek Vade': payment.check_time ? formatDate(payment.check_time) : '-',
-        'Borç Tutarı': formatNumber(payment.debt),
-        'Oluşturma Tarihi': formatDate(payment.created_date),
-        Oluşturan: payment.created_by?.username || '-'
+      const data = paymentEntryInvoices.map((paymentEntryInvoice) => ({
+        Tarih: formatDate(paymentEntryInvoice.date),
+        Şantiye: paymentEntryInvoice.worksite?.name || '-',
+        Grup: paymentEntryInvoice.group?.name || '-',
+        Şirket: paymentEntryInvoice.company?.name || '-',
+        Müşteri: paymentEntryInvoice.customer?.name || '-',
+        Banka: paymentEntryInvoice.bank || '-',
+        'Çek No': paymentEntryInvoice.check_no || '-',
+        'Çek Vade': paymentEntryInvoice.check_time ? formatDate(paymentEntryInvoice.check_time) : '-',
+        'Borç Tutarı': formatNumber(paymentEntryInvoice.debt),
+        'Oluşturma Tarihi': formatDate(paymentEntryInvoice.created_date),
+        Oluşturan: paymentEntryInvoice.created_by?.username || '-'
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(data);
@@ -289,17 +290,17 @@ const PaymentEntryPage = () => {
   };
 
   const filteredPayments = useMemo(() => {
-    if (!payments) return [];
+    if (!paymentEntryInvoices) return [];
 
     const searchLower = (searchQuery || '').toLowerCase();
 
-    return payments.filter((payment) => {
-      const worksiteName = payment?.worksite?.name?.toLowerCase() || '';
-      const companyName = payment?.company?.name?.toLowerCase() || '';
-      const customerName = payment?.customer?.name?.toLowerCase() || '';
-      const bank = (payment?.bank || '').toLowerCase();
-      const debt = payment?.debt?.toString() || '';
-      const groupName = payment?.group?.name?.toLowerCase() || '';
+    return paymentEntryInvoices.filter((paymentEntryInvoice) => {
+      const worksiteName = paymentEntryInvoice?.worksite?.name?.toLowerCase() || '';
+      const companyName = paymentEntryInvoice?.company?.name?.toLowerCase() || '';
+      const customerName = paymentEntryInvoice?.customer?.name?.toLowerCase() || '';
+      const bank = (paymentEntryInvoice?.bank || '').toLowerCase();
+      const debt = paymentEntryInvoice?.debt?.toString() || '';
+      const groupName = paymentEntryInvoice?.group?.name?.toLowerCase() || '';
 
       return (
         worksiteName.includes(searchLower) ||
@@ -310,7 +311,7 @@ const PaymentEntryPage = () => {
         groupName.includes(searchLower)
       );
     });
-  }, [payments, searchQuery]);
+  }, [paymentEntryInvoices, searchQuery]);
 
   const visiblePaymentRows = useMemo(() => {
     return filteredPayments.sort(getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
@@ -436,32 +437,32 @@ const PaymentEntryPage = () => {
               </TableHead>
               <TableBody>
                 {visiblePaymentRows.length > 0 ? (
-                  visiblePaymentRows.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell>{formatDate(payment.date)}</TableCell>
-                      <TableCell>{payment.worksite?.name || '-'}</TableCell>
-                      <TableCell>{payment.group?.name || '-'}</TableCell>
-                      <TableCell>{payment.company?.name || '-'}</TableCell>
-                      <TableCell>{payment.customer?.name || '-'}</TableCell>
-                      <TableCell>{payment.bank || '-'}</TableCell>
-                      <TableCell>{payment.check_no || '-'}</TableCell>
-                      <TableCell>{formatDate(payment.check_time)}</TableCell>
-                      <TableCell>{formatNumber(payment.debt)}</TableCell>
+                  visiblePaymentRows.map((paymentEntryInvoices) => (
+                    <TableRow key={paymentEntryInvoices.id}>
+                      <TableCell>{formatDate(paymentEntryInvoices.date)}</TableCell>
+                      <TableCell>{paymentEntryInvoices.worksite?.name || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.group?.name || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.company?.name || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.customer?.name || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.bank || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.check_no || '-'}</TableCell>
+                      <TableCell>{formatDate(paymentEntryInvoices.check_time)}</TableCell>
+                      <TableCell>{formatNumber(paymentEntryInvoices.debt)}</TableCell>
                       <TableCell align="right">
                         <Tooltip title="Detay">
-                          <IconButton onClick={() => handleViewPaymentClick(payment.id)}>
+                          <IconButton onClick={() => handleViewPaymentClick(paymentEntryInvoices.id)}>
                             <VisibilityIcon />
                           </IconButton>
                         </Tooltip>
                         {isAdmin && (
                           <>
                             <Tooltip title="Düzenle">
-                              <IconButton onClick={() => handleEditPaymentClick(payment.id)}>
+                              <IconButton onClick={() => handleEditPaymentClick(paymentEntryInvoices.id)}>
                                 <EditIcon />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Sil">
-                              <IconButton onClick={() => handleDeletePayment(payment.id)}>
+                              <IconButton onClick={() => handleDeletePayment(paymentEntryInvoices.id)}>
                                 <DeleteIcon />
                               </IconButton>
                             </Tooltip>
