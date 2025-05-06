@@ -12,7 +12,7 @@ import {
   Paper,
   Divider
 } from '@mui/material';
-import { PaymentEntryContext } from '../../../../contexts/admin/feyzains/PaymentEntryContext';
+import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import { AuthContext } from 'contexts/auth/AuthContext';
 
 const formatDate = (dateString) => {
@@ -29,7 +29,7 @@ const formatNumber = (number) => {
 };
 
 const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
-  const { getPaymentById } = useContext(PaymentEntryContext);
+  const { getPaymentEntryInvoiceById } = useContext(PaymentEntryInvoiceContext);
   const { fetchUser } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(true);
   const [payment, setPayment] = useState(null);
@@ -56,7 +56,7 @@ const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
   const fetchPaymentDetails = async () => {
     setIsLoading(true);
     try {
-      const result = await getPaymentById(paymentId);
+      const result = await getPaymentEntryInvoiceById(paymentId);
       if (result.success) {
         setPayment(result.data);
       }

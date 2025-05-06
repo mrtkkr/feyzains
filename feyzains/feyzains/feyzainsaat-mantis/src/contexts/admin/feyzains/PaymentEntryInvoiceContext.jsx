@@ -107,7 +107,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
 
       // Eğer res.response varsa ve status 204 ise işlem başarılı
       if (res?.response?.status === 204) {
-        setPayments((prev) => prev.filter((paymentEntryInvoices) => paymentEntryInvoices.id !== id));
+        setPaymentEntryInvoice((prev) => prev.filter((paymentEntryInvoices) => paymentEntryInvoices.id !== id));
         return { success: true };
       } else {
         const errorMessage = res?.response?.data?.detail || 'Ödeme veya Fatura silinemedi.';
