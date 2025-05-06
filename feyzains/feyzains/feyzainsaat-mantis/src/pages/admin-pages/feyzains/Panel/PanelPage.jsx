@@ -39,6 +39,9 @@ import EditCompanyPage from './Company/EditCompanyPage';
 import { CustomerContext } from 'contexts/admin/feyzains/CustomerContext';
 import AddCustomerPage from './Customer/AddCustomerPage';
 import EditCustomerPage from './Customer/EditCustomerPage';
+import { PersonalContext } from 'contexts/admin/feyzains/PersonalContext';
+import AddPersonalPage from './Personal/AddPersonalPage';
+import EditPersonalPage from './Personal/EditPersonalPage';
 //import { NotificationContext } from "contexts/auth/NotificationContext"; // ekle
 
 function descendingComparator(a, b, orderBy) {
@@ -80,6 +83,7 @@ const PanelPage = () => {
   const { groups, fetchGroups, addGroup, deleteGroup } = useContext(GroupContext);
   const { companies, fetchCompanies, addCompany, deleteCompany } = useContext(CompanyContext);
   const { customers, fetchCustomers, addCustomer, deleteCustomer } = useContext(CustomerContext);
+  const { personals, fetchPersonals, addPersonal, deletePersonal } = useContext(PersonalContext);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
@@ -98,6 +102,9 @@ const PanelPage = () => {
   const [isEditCustomerDialogOpen, setIsEditCustomerDialogOpen] = useState(false);
   const [isCreateCustomerDialogOpen, setIsCreateCustomerDialogOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const [isEditPersonalDialogOpen, setIsEditPersonalDialogOpen] = useState(false);
+  const [isCreatePersonalDialogOpen, setIsCreatePersonalDialogOpen] = useState(false);
+  const [selectedPersonalId, setSelectedPersonalId] = useState(null);
   //const [notificationMessage, setNotificationMessage] = useState("");
   //const { createNotification } = useContext(NotificationContext);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -117,14 +124,42 @@ const PanelPage = () => {
   useEffect(() => {
     fetchCustomers();
   }, []);
+  useEffect(() => {
+    fetchPersonals();
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredWorksites, setFilteredWorksites] = useState([]);
+  const [searchTerm2, setSearchTerm2] = useState('');
+  const [filteredGroups, setFilteredGroups] = useState([]);
+  const [searchTerm3, setSearchTerm3] = useState('');
+  const [filteredCompanies, setFilteredCompanies] = useState([]);
+  const [searchTerm4, setSearchTerm4] = useState('');
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
+  const [searchTerm5, setSearchTerm5] = useState('');
+  const [filteredPersonals, setFilteredPersonals] = useState([]);
 
   useEffect(() => {
     const filtered = worksites.filter((worksite) => worksite.name?.toLowerCase().includes(searchTerm.toLowerCase()));
     setFilteredWorksites(filtered);
   }, [searchTerm, worksites]);
+
+  useEffect(() => {
+    const filtered = groups.filter((group) => group.name?.toLowerCase().includes(searchTerm2.toLowerCase()));
+    setFilteredGroups(filtered);
+  }, [searchTerm2, groups]);
+  useEffect(() => {
+    const filtered = companies.filter((company) => company.name?.toLowerCase().includes(searchTerm3.toLowerCase()));
+    setFilteredCompanies(filtered);
+  }, [searchTerm3, companies]);
+  useEffect(() => {
+    const filtered = customers.filter((customer) => customer.name?.toLowerCase().includes(searchTerm4.toLowerCase()));
+    setFilteredCustomers(filtered);
+  }, [searchTerm4, customers]);
+  useEffect(() => {
+    const filtered = personals.filter((personal) => personal.name?.toLowerCase().includes(searchTerm5.toLowerCase()));
+    setFilteredPersonals(filtered);
+  }, [searchTerm5, personals]);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -158,6 +193,11 @@ const PanelPage = () => {
   };
   const handleCreateCustomerDialogClose = () => {
     setIsCreateCustomerDialogOpen(false);
+    // Trigger a refresh only when needed
+    setRefreshTrigger((prev) => prev + 1);
+  };
+  const handleCreatePersonalDialogClose = () => {
+    setIsCreatePersonalDialogOpen(false);
     // Trigger a refresh only when needed
     setRefreshTrigger((prev) => prev + 1);
   };
@@ -228,6 +268,15 @@ const PanelPage = () => {
       setIsEditCustomerDialogOpen(false);
     }
   };
+  const handleEditPersonal = (personalId = null) => {
+    if (personalId) {
+      setSelectedPersonalId(personalId);
+      setIsEditPersonalDialogOpen(true);
+    } else {
+      setSelectedPersonalId(null);
+      setIsEditPersonalDialogOpen(false);
+    }
+  };
 
   const handleDeleteUser = async (id) => {
     if (window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
@@ -286,6 +335,17 @@ const PanelPage = () => {
       }
     }
   };
+  const handleDeletePersonal = async (id) => {
+    if (window.confirm('Bu personeli silmek istediğinizden emin misiniz?')) {
+      const response = await deletePersonal(id);
+      if (response.success) {
+        toast.success('Personel başarıyla silindi');
+        fetchPersonals();
+      } else {
+        toast.error(response.error || 'Personel silinemedi');
+      }
+    }
+  };
 
   const handleNotificationSubmit = async (e) => {
     e.preventDefault();
@@ -336,6 +396,13 @@ const PanelPage = () => {
       onClose: handleCreateCustomerDialogClose
     }),
     [isCreateCustomerDialogOpen]
+  );
+  const createPersonalProps = useMemo(
+    () => ({
+      open: isCreatePersonalDialogOpen,
+      onClose: handleCreatePersonalDialogClose
+    }),
+    [isCreatePersonalDialogOpen]
   );
 
   return (
@@ -470,17 +537,28 @@ const PanelPage = () => {
                 <Typography variant="h6" gutterBottom>
                   Şantiyeler
                 </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={() => setIsCreateWorksiteDialogOpen(true)}
-                  sx={{ ml: 2 }}
-                >
-                  Şantiye Ekle
-                </Button>
+
+                <Box display="flex" alignItems="center" gap={2}>
+                  <TextField
+                    label="Şantiye Ara"
+                    variant="outlined"
+                    size="medium"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    sx={{ width: 250 }}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => setIsCreateWorksiteDialogOpen(true)}
+                  >
+                    Şantiye Ekle
+                  </Button>
+                </Box>
               </Box>
+
               <TableContainer component={Paper}>
                 <Table>
                   <TableHead>
@@ -491,7 +569,7 @@ const PanelPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {worksites.map((worksite) => (
+                    {filteredWorksites.map((worksite) => (
                       <TableRow key={worksite.id}>
                         <TableCell>{worksite.name}</TableCell>
                         <TableCell>{worksite.created_by?.username || '-'}</TableCell>
@@ -523,16 +601,26 @@ const PanelPage = () => {
                 <Typography variant="h6" gutterBottom>
                   Gruplar
                 </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={() => setIsCreateGroupDialogOpen(true)}
-                  sx={{ ml: 2 }}
-                >
-                  Grup Ekle
-                </Button>
+
+                <Box display="flex" alignItems="center" gap={2}>
+                  <TextField
+                    label="Grup Ara"
+                    variant="outlined"
+                    size="medium"
+                    value={searchTerm2}
+                    onChange={(e) => setSearchTerm2(e.target.value)}
+                    sx={{ width: 250 }}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => setIsCreateGroupDialogOpen(true)}
+                  >
+                    Grup Ekle
+                  </Button>
+                </Box>
               </Box>
               <TableContainer component={Paper}>
                 <Table>
@@ -544,7 +632,7 @@ const PanelPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {groups.map((group) => (
+                    {filteredGroups.map((group) => (
                       <TableRow key={group.id}>
                         <TableCell>{group.name}</TableCell>
                         <TableCell>{group.created_by?.username || '-'}</TableCell>
@@ -578,16 +666,26 @@ const PanelPage = () => {
                 <Typography variant="h6" gutterBottom>
                   Şirketler
                 </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={() => setIsCreateCompanyDialogOpen(true)}
-                  sx={{ ml: 2 }}
-                >
-                  Şirket Ekle
-                </Button>
+
+                <Box display="flex" alignItems="center" gap={2}>
+                  <TextField
+                    label="Şirket Ara"
+                    variant="outlined"
+                    size="medium"
+                    value={searchTerm3}
+                    onChange={(e) => setSearchTerm3(e.target.value)}
+                    sx={{ width: 250 }}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => setIsCreateCompanyDialogOpen(true)}
+                  >
+                    Şirket Ekle
+                  </Button>
+                </Box>
               </Box>
               <TableContainer component={Paper}>
                 <Table>
@@ -599,7 +697,7 @@ const PanelPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {companies.map((company) => (
+                    {filteredCompanies.map((company) => (
                       <TableRow key={company.id}>
                         <TableCell>{company.name}</TableCell>
                         <TableCell>{company.created_by?.username || '-'}</TableCell>
@@ -630,16 +728,26 @@ const PanelPage = () => {
                 <Typography variant="h6" gutterBottom>
                   Müşteriler
                 </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  onClick={() => setIsCreateCustomerDialogOpen(true)}
-                  sx={{ ml: 2 }}
-                >
-                  Müşteri Ekle
-                </Button>
+
+                <Box display="flex" alignItems="center" gap={2}>
+                  <TextField
+                    label="Müşteri Ara"
+                    variant="outlined"
+                    size="medium"
+                    value={searchTerm4}
+                    onChange={(e) => setSearchTerm4(e.target.value)}
+                    sx={{ width: 250 }}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => setIsCreateCustomerDialogOpen(true)}
+                  >
+                    Müşteri Ekle
+                  </Button>
+                </Box>
               </Box>
               <TableContainer component={Paper}>
                 <Table>
@@ -651,7 +759,7 @@ const PanelPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {customers.map((customer) => (
+                    {filteredCustomers.map((customer) => (
                       <TableRow key={customer.id}>
                         <TableCell>{customer.name}</TableCell>
                         <TableCell>{customer.created_by?.username || '-'}</TableCell>
@@ -677,6 +785,84 @@ const PanelPage = () => {
         </Grid>
       </Grid>
 
+      <Grid container spacing={3} mb={4}>
+        <Grid item xs={12} md={12}>
+          <Card>
+            <CardContent>
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h6" gutterBottom>
+                  Personeller
+                </Typography>
+
+                <Box display="flex" alignItems="center" gap={2}>
+                  <TextField
+                    label="Personel Ara"
+                    variant="outlined"
+                    size="medium"
+                    value={searchTerm5}
+                    onChange={(e) => setSearchTerm5(e.target.value)}
+                    sx={{ width: 250 }}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={() => setIsCreatePersonalDialogOpen(true)}
+                  >
+                    Personel Ekle
+                  </Button>
+                </Box>
+              </Box>
+
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Ad</TableCell>
+                      <TableCell>TC Kimlik No</TableCell>
+                      <TableCell>Kayıt Tarihi</TableCell>
+                      <TableCell>Giriş</TableCell>
+                      <TableCell>Çıkış</TableCell>
+                      <TableCell>Şantiye</TableCell>
+                      <TableCell>Oluşturan</TableCell>
+                      <TableCell align="right">İşlemler</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredPersonals.map((personal) => (
+                      <TableRow key={personal.id}>
+                        <TableCell>{personal.name}</TableCell>
+                        <TableCell>{personal.identity_number}</TableCell>
+                        <TableCell>{personal.creation_date?.slice(0, 16).replace('T', ' ') || '-'}</TableCell>
+                        <TableCell>{personal.entry?.slice(0, 16).replace('T', ' ') || '-'}</TableCell>
+                        <TableCell>{personal.exit?.slice(0, 16).replace('T', ' ') || '-'}</TableCell>
+                        <TableCell>{personal.worksite_detail?.name || '-'}</TableCell>
+                        <TableCell>{personal.created_by?.username || '-'}</TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="Düzenle">
+                            <IconButton onClick={() => handleEditPersonal(personal.id)}>
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Sil">
+                            <IconButton onClick={() => handleDeletePersonal(personal.id)}>
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Diğer bileşenler burada */}
+      </Grid>
+
       {isCreateWorksiteDialogOpen && <AddWorksitePage {...createWorksiteProps} />}
       {isEditWorksiteDialogOpen && selectedWorksiteId && (
         <EditWorksitePage open={isEditWorksiteDialogOpen} onClose={() => handleEditWorksite()} worksiteId={selectedWorksiteId} />
@@ -694,6 +880,10 @@ const PanelPage = () => {
       {isCreateCustomerDialogOpen && <AddCustomerPage {...createCustomerProps} />}
       {isEditCustomerDialogOpen && selectedCustomerId && (
         <EditCustomerPage open={isEditCustomerDialogOpen} onClose={() => handleEditCustomer()} customerId={selectedCustomerId} />
+      )}
+      {isCreatePersonalDialogOpen && <AddPersonalPage {...createPersonalProps} />}
+      {isEditPersonalDialogOpen && selectedPersonalId && (
+        <EditPersonalPage open={isEditPersonalDialogOpen} onClose={() => handleEditPersonal()} personalId={selectedPersonalId} />
       )}
 
       {isEditUserDialogOpen && selectedUserId && (

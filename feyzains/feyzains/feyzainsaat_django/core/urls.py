@@ -18,5 +18,6 @@ urlpatterns = [
     path('payments/<int:pk>/', PaymentDetailView.as_view(), name='payment-detail'),
     # path("checklists/", ChecklistView.as_view(), name="checklist_api"),
     # path("invoices/", InvoiceView.as_view(), name="invoice_api"),
-    # path("personals/", PersonalView.as_view(), name="personal_api"),
+    path("personal/", PersonalView.as_view(), name="personal_api"),
+    path("personals/<int:pk>/", PersonalDetailView.as_view(), name="personal-detail"),
 ]

@@ -84,6 +84,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 class PersonalSerializer(serializers.ModelSerializer):
     created_by = UserSerializer(read_only=True)
+    worksite_detail = WorksiteSerializer(source='worksite', read_only=True)  # ✅ bu doğru kullanım
 
     class Meta:
         model = Personal

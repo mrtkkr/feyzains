@@ -198,3 +198,40 @@ class CustomerDetailView(APIView):
         customer = get_object_or_404(Customer, pk=pk)
         customer.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# --- Personal Views ---
+class PersonalView(APIView):
+
+    def get(self, request):
+        personals = Personal.objects.select_related('worksite', 'created_by').all().order_by('-id')
+        serializer = PersonalSerializer(personals, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = PersonalSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(created_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PersonalDetailView(APIView):
+
+    def get(self, request, pk):
+        personal = get_object_or_404(Personal, pk=pk)
+        serializer = PersonalSerializer(personal)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        personal = get_object_or_404(Personal, pk=pk)
+        serializer = PersonalSerializer(personal, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        personal = get_object_or_404(Personal, pk=pk)
+        personal.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
