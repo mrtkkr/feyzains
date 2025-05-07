@@ -28,12 +28,12 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // PDF ikonu ekle
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import axios from 'axios';
 import { PUBLIC_URL } from '../../../../services/network_service';
-import CreateInvoiceBill from './CreateInvoiceBill';
-import EditInvoiceBill from './EditInvoiceBill';
-import ViewInvoiceBill from './ViewInvoiceBill';
+// import jsPDF from 'jspdf'; // jsPDF kütüphanesini import et
+// import 'jspdf-autotable'; // jsPDF-AutoTable eklentisini import et
 import { AuthContext } from 'contexts/auth/AuthContext';
 import * as XLSX from 'xlsx';
 
@@ -65,10 +65,9 @@ function getComparator(order, orderBy) {
   return order === 'desc' ? (a, b) => descendingComparator(a, b, orderBy) : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
-const InvoiceBillPage = () => {
+const SearchPage = () => {
   // Context
-  const { paymentEntryInvoices, loading, error, fetchPaymentEntryInvoices, deletePaymentEntryInvoice } =
-    useContext(PaymentEntryInvoiceContext);
+  const { paymentEntryInvoices, loading, error, fetchPaymentEntryInvoices } = useContext(PaymentEntryInvoiceContext);
   const { fetchUser } = useContext(AuthContext);
 
   // States
@@ -76,15 +75,12 @@ const InvoiceBillPage = () => {
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
-  const [isEditInvoiceDialogOpen, setIsEditInvoiceDialogOpen] = useState(false);
-  const [isCreateInvoiceDialogOpen, setIsCreateInvoiceDialogOpen] = useState(false);
-  const [isViewInvoiceDialogOpen, setIsViewInvoiceDialogOpen] = useState(false);
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
+
   const [selectedFile, setSelectedFile] = useState(null);
-  const [searchQuery2, setSearchQuery2] = useState('');
+  const [searchQuery3, setSearchQuery3] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [invoiceCount, setInvoiceCount] = useState(0);
+  const [searchCount, setSearchCount] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
@@ -111,7 +107,7 @@ const InvoiceBillPage = () => {
   // Fatura sayısını güncelleme
   useEffect(() => {
     if (paymentEntryInvoices) {
-      setInvoiceCount(paymentEntryInvoices.length);
+      setSearchCount(paymentEntryInvoices.length);
     }
   }, [paymentEntryInvoices]);
 
@@ -130,54 +126,9 @@ const InvoiceBillPage = () => {
     setPage(0);
   };
 
-  const handleViewInvoiceClick = (id) => {
-    setSelectedInvoiceId(id);
-    setIsViewInvoiceDialogOpen(true);
-  };
-
-  const handleCloseViewDialog = () => {
-    setIsViewInvoiceDialogOpen(false);
-    setSelectedInvoiceId(null);
-  };
-
-  const handleEditInvoiceClick = (id) => {
-    setSelectedInvoiceId(id);
-    setIsEditInvoiceDialogOpen(true);
-  };
-
-  const handleEditInvoice = () => {
-    setIsEditInvoiceDialogOpen(false);
-    setSelectedInvoiceId(null);
-    // Trigger a refresh only when needed
-    setRefreshTrigger((prev) => prev + 1);
-  };
-
-  const handleDeleteInvoice = async (id) => {
-    if (window.confirm('Bu fatura kaydını silmek istediğinizden emin misiniz?')) {
-      try {
-        const response = await deletePaymentEntryInvoice(id);
-        if (response && response.success) {
-          toast.success('Fatura kaydı başarıyla silindi');
-          // We don't need to fetch again as deletePayment updates the local state
-        } else {
-          toast.error(response?.error || 'Fatura kaydı silinemedi');
-        }
-      } catch (error) {
-        console.error('Silme işlemi sırasında hata:', error);
-        toast.error('Silme işlemi başarısız');
-      }
-    }
-  };
-
   // Dosya seçildiğinde state'e kaydet
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
-  };
-
-  const handleCreateDialogClose = () => {
-    setIsCreateInvoiceDialogOpen(false);
-    // Trigger a refresh only when needed
-    setRefreshTrigger((prev) => prev + 1);
   };
 
   const refreshData = useCallback(() => {
@@ -241,6 +192,9 @@ const InvoiceBillPage = () => {
         Grup: paymentEntryInvoice.group?.name || '-',
         Şirket: paymentEntryInvoice.company?.name || '-',
         Müşteri: paymentEntryInvoice.customer?.name || '-',
+        Banka: paymentEntryInvoice.bank || '-',
+        'Çek No': paymentEntryInvoice.check_no || '-',
+        'Çek Vade': paymentEntryInvoice.check_time ? formatDate(paymentEntryInvoice.check_time) : '-',
         Malzeme: paymentEntryInvoice.material || '-',
         Adet: paymentEntryInvoice.quantity || '-',
         'Birim Fiyatı': formatNumber(paymentEntryInvoice.unit_price),
@@ -248,6 +202,7 @@ const InvoiceBillPage = () => {
         KDV: paymentEntryInvoice.tax || '-',
         Tevkifat: paymentEntryInvoice.withholding || '-',
         Alacak: paymentEntryInvoice.receivable || '-',
+        'Borç Tutarı': formatNumber(paymentEntryInvoice.debt),
         Oluşturan: paymentEntryInvoice.created_by?.username || '-'
       }));
 
@@ -260,12 +215,17 @@ const InvoiceBillPage = () => {
         { wch: 15 }, // Grup
         { wch: 20 }, // Şirket
         { wch: 20 }, // Müşteri
+        { wch: 15 }, // Banka
+        { wch: 15 }, // Check No
+        { wch: 15 }, // Check Vade
         { wch: 15 }, // Malzeme
         { wch: 12 }, // Adet
         { wch: 15 }, // Birim Fiyatı
         { wch: 15 }, // Tutar
         { wch: 20 }, // KDV
         { wch: 20 }, // Tevkifat
+        { wch: 20 }, // Alacak
+        { wch: 20 }, // Borç Tutarı
         { wch: 25 } // Oluşturan
       ];
 
@@ -284,7 +244,7 @@ const InvoiceBillPage = () => {
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Ödemeler');
 
       // Export işlemi
-      XLSX.writeFile(workbook, 'Odeme_Listesi.xlsx');
+      XLSX.writeFile(workbook, 'Arama_Bolumu.xlsx');
       toast.success('Excel başarıyla oluşturuldu!');
     } catch (error) {
       toast.error('Excel oluşturulurken hata oluştu.');
@@ -292,16 +252,138 @@ const InvoiceBillPage = () => {
     }
   };
 
-  const filteredInvoices = useMemo(() => {
+  // const exportToPdf = () => {
+  //   try {
+  //     if (!paymentEntryInvoices || paymentEntryInvoices.length === 0) {
+  //       toast.warning('PDF için arama verisi bulunamadı!');
+  //       return;
+  //     }
+
+  //     const doc = new jsPDF('l', 'mm', 'a4'); // Yatay A4
+  //     const margin = 10;
+  //     const rowHeight = 10;
+  //     const startY = 30;
+  //     const pageWidth = doc.internal.pageSize.getWidth();
+  //     const today = new Date().toLocaleDateString('tr-TR');
+
+  //     // Başlık
+  //     doc.setFontSize(16);
+  //     doc.setFont(undefined, 'bold');
+  //     doc.text('Çek Listesi', margin, 15);
+
+  //     // Tarih
+  //     doc.setFontSize(10);
+  //     doc.setFont(undefined, 'normal');
+  //     doc.text(`Oluşturma Tarihi: ${today}`, margin, 22);
+
+  //     const headers = [
+  //       'Tarih',
+  //       'Şantiye',
+  //       'Grup',
+  //       'Şirket',
+  //       'Müşteri',
+  //       'Banka',
+  //       'Çek No',
+  //       'Çek Vade',
+  //       'Malzeme',
+  //       'Adet',
+  //       'Birim Fiyatı',
+  //       'Tutar',
+  //       'KDV',
+  //       'Tevkifat',
+  //       'Alacak',
+  //       'Borç Tutarı'
+  //     ];
+
+  //     // Kolon genişlikleri - A4 yatay sayfaya sığacak şekilde dengelendi
+  //     const columnWidths = [25, 30, 30, 35, 35, 30, 25, 25, 30, 20, 25, 25, 20, 20, 30, 30];
+
+  //     const filteredData = filteredSearchs.map((entry) => [
+  //       formatDate(entry.date),
+  //       entry.worksite?.name || '-',
+  //       entry.group?.name || '-',
+  //       entry.company?.name || '-',
+  //       entry.customer?.name || '-',
+  //       entry.bank || '-',
+  //       entry.check_no || '-',
+  //       entry.check_time ? formatDate(entry.check_time) : '-',
+  //       entry.material || '-',
+  //       entry.quantity || '-',
+  //       formatNumber(entry.unit_price),
+  //       formatNumber(entry.price),
+  //       entry.tax || '-',
+  //       entry.withholding || '-',
+  //       entry.receivable || '-',
+  //       formatNumber(entry.debt)
+  //     ]);
+
+  //     let currentY = startY;
+
+  //     const drawTableHeader = () => {
+  //       let currentX = margin;
+  //       doc.setFillColor(66, 66, 66);
+  //       doc.setTextColor(255, 255, 255);
+  //       doc.setFontSize(5);
+  //       doc.setFont(undefined, 'bold');
+
+  //       headers.forEach((title, i) => {
+  //         doc.rect(currentX, currentY, columnWidths[i], rowHeight, 'F');
+  //         const headerText = doc.splitTextToSize(title, columnWidths[i] - 2);
+  //         doc.text(headerText, currentX + columnWidths[i] / 2, currentY + rowHeight / 2, {
+  //           align: 'center',
+  //           baseline: 'middle'
+  //         });
+  //         currentX += columnWidths[i];
+  //       });
+
+  //       currentY += rowHeight;
+  //     };
+
+  //     const drawTableRow = (row) => {
+  //       if (currentY + rowHeight > doc.internal.pageSize.getHeight() - margin) {
+  //         doc.addPage();
+  //         currentY = margin;
+  //         drawTableHeader();
+  //       }
+
+  //       let currentX = margin;
+  //       doc.setFont(undefined, 'normal');
+  //       doc.setFontSize(8);
+  //       doc.setTextColor(0, 0, 0);
+
+  //       row.forEach((cell, i) => {
+  //         doc.rect(currentX, currentY, columnWidths[i], rowHeight);
+  //         const textLines = doc.splitTextToSize(cell.toString(), columnWidths[i] - 2);
+  //         doc.text(textLines, currentX + 1, currentY + 4); // Çok satırlı destek
+  //         currentX += columnWidths[i];
+  //       });
+
+  //       currentY += rowHeight;
+  //     };
+
+  //     drawTableHeader();
+
+  //     filteredData.forEach((row) => drawTableRow(row));
+
+  //     doc.save('Arama_Bolumu.pdf');
+  //     toast.success('PDF başarıyla oluşturuldu!');
+  //   } catch (error) {
+  //     toast.error('PDF oluşturulurken bir hata oluştu.');
+  //     console.error('PDF export hatası:', error);
+  //   }
+  // };
+
+  const filteredSearchs = useMemo(() => {
     if (!paymentEntryInvoices) return [];
 
-    const searchLower = (searchQuery2 || '').toLowerCase();
+    const searchLower = (searchQuery3 || '').toLowerCase();
 
     return paymentEntryInvoices.filter((paymentEntryInvoice) => {
       const worksiteName = paymentEntryInvoice?.worksite?.name?.toLowerCase() || '';
       const groupName = paymentEntryInvoice?.group?.name?.toLowerCase() || '';
       const companyName = paymentEntryInvoice?.company?.name?.toLowerCase() || '';
       const customerName = paymentEntryInvoice?.customer?.name?.toLowerCase() || '';
+      const bank = (paymentEntryInvoice?.bank || '').toLowerCase();
       const material = (paymentEntryInvoice?.material || '').toLowerCase();
       const quantity = paymentEntryInvoice?.quantity?.toString() || '';
       const unitPrice = paymentEntryInvoice?.unit_price?.toString() || '';
@@ -309,6 +391,7 @@ const InvoiceBillPage = () => {
       const tax = paymentEntryInvoice?.tax?.toString() || '';
       const withholding = paymentEntryInvoice?.withholding?.toString() || '';
       const receivable = paymentEntryInvoice?.receivable?.toString() || '';
+      const debt = paymentEntryInvoice?.debt?.toString() || '';
       const createdBy = paymentEntryInvoice?.created_by?.username?.toLowerCase() || '';
       const date = paymentEntryInvoice?.date || '';
 
@@ -317,6 +400,7 @@ const InvoiceBillPage = () => {
         groupName.includes(searchLower) ||
         companyName.includes(searchLower) ||
         customerName.includes(searchLower) ||
+        bank.includes(searchLower) ||
         material.includes(searchLower) ||
         quantity.includes(searchLower) ||
         unitPrice.includes(searchLower) ||
@@ -324,56 +408,32 @@ const InvoiceBillPage = () => {
         tax.includes(searchLower) ||
         withholding.includes(searchLower) ||
         receivable.includes(searchLower) ||
+        debt.includes(searchLower) ||
         createdBy.includes(searchLower) ||
         date.includes(searchLower)
       );
     });
-  }, [paymentEntryInvoices, searchQuery2]);
+  }, [paymentEntryInvoices, searchQuery3]);
 
-  const visibleInvoiceRows = useMemo(() => {
-    return filteredInvoices.sort(getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [filteredInvoices, order, orderBy, page, rowsPerPage]);
+  const visibleSearchRows = useMemo(() => {
+    return filteredSearchs.sort(getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  }, [filteredSearchs, order, orderBy, page, rowsPerPage]);
 
   // IMPORTANT: Using memoized props to pass to child components
-  const viewInvoiceProps = useMemo(
-    () => ({
-      open: isViewInvoiceDialogOpen,
-      onClose: handleCloseViewDialog,
-      invoiceId: selectedInvoiceId
-    }),
-    [isViewInvoiceDialogOpen, selectedInvoiceId]
-  );
-
-  const editInvoiceProps = useMemo(
-    () => ({
-      open: isEditInvoiceDialogOpen,
-      onClose: handleEditInvoice,
-      invoiceId: selectedInvoiceId
-    }),
-    [isEditInvoiceDialogOpen, selectedInvoiceId]
-  );
-
-  const createInvoiceProps = useMemo(
-    () => ({
-      open: isCreateInvoiceDialogOpen,
-      onClose: handleCreateDialogClose
-    }),
-    [isCreateInvoiceDialogOpen]
-  );
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" component="h1">
-          Fatura Kayıtları
+          Arama Bölümü
         </Typography>
         <Box display="flex" alignItems="center">
           <TextField
             variant="outlined"
             size="small"
-            placeholder="Fatura Ara..."
-            value={searchQuery2}
-            onChange={(e) => setSearchQuery2(e.target.value)}
+            placeholder="Genel Ara..."
+            value={searchQuery3}
+            onChange={(e) => setSearchQuery3(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -382,40 +442,12 @@ const InvoiceBillPage = () => {
               )
             }}
           />
+          {/* <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
+            PDF'e Aktar
+          </Button> */}
           <Button variant="outlined" color="secondary" size="small" onClick={exportToExcel} sx={{ ml: 2 }}>
             Excel'e Aktar
           </Button>
-          {isAdmin && (
-            <>
-              {/* <input type="file" accept=".xlsx" onChange={handleFileChange} style={{ display: 'none' }} id="excel-upload" /> */}
-              {/* <label htmlFor="excel-upload">
-                <Button variant="contained" component="span" color="primary" size="small" sx={{ ml: 2 }}>
-                  Excel Seç
-                </Button>
-              </label> */}
-              {/* <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <AddIcon />}
-                onClick={importFromExcel}
-                sx={{ ml: 2 }}
-                disabled={isLoading || !selectedFile}
-              >
-                {isLoading ? 'Yükleniyor...' : 'Excel Yükle'}
-              </Button> */}
-              <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={() => setIsCreateInvoiceDialogOpen(true)}
-                sx={{ ml: 2 }}
-              >
-                Fatura Ekle
-              </Button>
-            </>
-          )}
         </Box>
       </Box>
 
@@ -429,13 +461,6 @@ const InvoiceBillPage = () => {
         </Box>
       ) : (
         <>
-          {/* Modal'ların koşullu renderlanması - Optimized with memoized props */}
-          {isCreateInvoiceDialogOpen && <CreateInvoiceBill {...createInvoiceProps} />}
-
-          {isEditInvoiceDialogOpen && selectedInvoiceId && <EditInvoiceBill {...editInvoiceProps} />}
-
-          {isViewInvoiceDialogOpen && selectedInvoiceId && <ViewInvoiceBill {...viewInvoiceProps} />}
-
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
@@ -445,6 +470,9 @@ const InvoiceBillPage = () => {
                   <TableCell>Grup</TableCell>
                   <TableCell>Şirket</TableCell>
                   <TableCell>Müşteri</TableCell>
+                  <TableCell>Banka</TableCell>
+                  <TableCell>Çek No</TableCell>
+                  <TableCell>Çek Vade</TableCell>
                   <TableCell>Malzeme</TableCell>
                   <TableCell>Adet</TableCell>
                   <TableCell>Birim Fiyatı</TableCell>
@@ -452,55 +480,36 @@ const InvoiceBillPage = () => {
                   <TableCell>KDV</TableCell>
                   <TableCell>Tevkifat</TableCell>
                   <TableCell>Alacak</TableCell>
-                  <TableCell align="right">İşlemler</TableCell>
+                  <TableCell>Borç</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {visibleInvoiceRows.filter((row) => row.type === 'invoice').length > 0 ? (
-                  visibleInvoiceRows
-                    .filter((row) => row.type === 'invoice')
-                    .map((paymentEntryInvoices) => (
-                      <TableRow key={paymentEntryInvoices.id}>
-                        <TableCell>{formatDate(paymentEntryInvoices.date)}</TableCell>
-                        <TableCell>{paymentEntryInvoices.worksite?.name || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.group?.name || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.company?.name || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.customer?.name || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.material || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.quantity || '-'}</TableCell>
-                        <TableCell>{formatNumber(paymentEntryInvoices.unit_price)}</TableCell>
-                        <TableCell>{formatNumber(paymentEntryInvoices.price)}</TableCell>
-                        <TableCell>{paymentEntryInvoices.tax || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.withholding || '-'}</TableCell>
-                        <TableCell>{formatNumber(paymentEntryInvoices.receivable) || '-'}</TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Detay">
-                            <IconButton onClick={() => handleViewInvoiceClick(paymentEntryInvoices.id)}>
-                              <VisibilityIcon />
-                            </IconButton>
-                          </Tooltip>
-                          {isAdmin && (
-                            <>
-                              <Tooltip title="Düzenle">
-                                <IconButton onClick={() => handleEditInvoiceClick(paymentEntryInvoices.id)}>
-                                  <EditIcon />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Sil">
-                                <IconButton onClick={() => handleDeleteInvoice(paymentEntryInvoices.id)}>
-                                  <DeleteIcon />
-                                </IconButton>
-                              </Tooltip>
-                            </>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                {visibleSearchRows.length > 0 ? (
+                  visibleSearchRows.map((paymentEntryInvoices) => (
+                    <TableRow key={paymentEntryInvoices.id}>
+                      <TableCell>{formatDate(paymentEntryInvoices.date)}</TableCell>
+                      <TableCell>{paymentEntryInvoices.worksite?.name || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.group?.name || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.company?.name || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.customer?.name || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.bank || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.check_no || '-'}</TableCell>
+                      <TableCell>{formatDate(paymentEntryInvoices.check_time)}</TableCell>
+                      <TableCell>{paymentEntryInvoices.material || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.quantity || '-'}</TableCell>
+                      <TableCell>{formatNumber(paymentEntryInvoices.unit_price)}</TableCell>
+                      <TableCell>{formatNumber(paymentEntryInvoices.price)}</TableCell>
+                      <TableCell>{paymentEntryInvoices.tax || '-'}</TableCell>
+                      <TableCell>{paymentEntryInvoices.withholding || '-'}</TableCell>
+                      <TableCell>{formatNumber(paymentEntryInvoices.receivable) || '-'}</TableCell>
+                      <TableCell>{formatNumber(paymentEntryInvoices.debt) || '-'}</TableCell>
+                    </TableRow>
+                  ))
                 ) : (
                   <TableRow>
                     <TableCell colSpan={13} align="center">
                       <Typography variant="body1" py={2}>
-                        {searchQuery2 ? 'Arama kriterlerinize uygun fatura kaydı bulunamadı.' : 'Henüz fatura kaydı bulunmamaktadır.'}
+                        {searchQuery3 ? 'Arama kriterlerinize uygun fatura kaydı bulunamadı.' : 'Henüz fatura kaydı bulunmamaktadır.'}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -511,7 +520,7 @@ const InvoiceBillPage = () => {
           <TablePagination
             rowsPerPageOptions={[10, 25, 50]}
             component="div"
-            count={filteredInvoices.length}
+            count={filteredSearchs.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -525,4 +534,4 @@ const InvoiceBillPage = () => {
   );
 };
 
-export default InvoiceBillPage;
+export default SearchPage;

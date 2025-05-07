@@ -115,7 +115,7 @@ const ViewInvoiceEntry = ({ open, onClose, invoiceId }) => {
               <DetailItem label="Tutar" value={formatNumber(invoice.price)} />
               <DetailItem label="Kdv" value={invoice.tax} />
               <DetailItem label="Tevkifat" value={invoice.withholding} />
-              <DetailItem label="Receivable" value={formatNumber(invoice.receivable)} />
+              <DetailItem label="Alacak" value={formatNumber(invoice.receivable)} />
             </Box>
 
             <Box>

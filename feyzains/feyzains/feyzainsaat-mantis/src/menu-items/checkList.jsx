@@ -6,6 +6,7 @@ import {
   FontSizeOutlined,
   LoadingOutlined
 } from '@ant-design/icons';
+import ChecklistIcon from '@mui/icons-material/Checklist';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 
 // icons
@@ -16,24 +17,25 @@ const icons = {
   AntDesignOutlined,
   LoadingOutlined,
   AppstoreAddOutlined,
-  AssignmentIcon
+  AssignmentIcon,
+  ChecklistIcon
 };
 
 // ==============================|| MENU ITEMS - UTILITIES ||============================== //
 
-const debt = {
-  id: 'invoice_bill',
-  title: 'Fatura Ödeme',
+const checkList = {
+  id: 'checklist',
+  title: 'Çek Listesi',
   type: 'group',
   children: [
     {
-      id: 'invoice_bill',
-      title: 'Fatura Ödeme',
+      id: 'checklist',
+      title: 'Çek Listesi',
       type: 'item',
-      url: '/invoice_bill',
-      icon: icons.AppstoreAddOutlined
+      url: '/checklist',
+      icon: icons.ChecklistIcon
     }
   ]
 };
 
-export default debt;
+export default checkList;

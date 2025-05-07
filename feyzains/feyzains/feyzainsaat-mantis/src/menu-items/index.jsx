@@ -6,6 +6,8 @@ import finances from './finances';
 import admin from './admin';
 import payment_entry from './entryPayment';
 import invoice_bill from './invoiceBill';
+import search from './search';
+import checkList from './checkList';
 
 // ==============================|| MENU ITEMS ||============================== //
 
@@ -16,6 +18,8 @@ const menuItems = {
     // finances,
     payment_entry,
     invoice_bill,
+    search,
+    checkList,
     admin
   ]
 };

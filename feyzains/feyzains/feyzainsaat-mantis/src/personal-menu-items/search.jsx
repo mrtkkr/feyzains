@@ -21,19 +21,19 @@ const icons = {
 
 // ==============================|| MENU ITEMS - UTILITIES ||============================== //
 
-const debt = {
-  id: 'invoice_bill',
-  title: 'Fatura Ödeme',
+const search = {
+  id: 'search',
+  title: 'Arama Bölümü',
   type: 'group',
   children: [
     {
-      id: 'invoice_bill',
-      title: 'Fatura Ödeme',
+      id: 'search',
+      title: 'Arama Bölümü',
       type: 'item',
-      url: '/invoice_bill',
-      icon: icons.AppstoreAddOutlined
+      url: '/search',
+      icon: icons.AssignmentIcon
     }
   ]
 };
 
-export default debt;
+export default search;

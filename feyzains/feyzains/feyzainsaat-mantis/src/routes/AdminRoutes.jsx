@@ -6,6 +6,8 @@ import PanelPage from 'pages/admin-pages/feyzains/Panel/PanelPage';
 import CreateSnippetPage from 'pages/admin-pages/Snippet/CreateSnippetPage';
 import PaymentEntryPage from 'pages/admin-pages/feyzains/paymentEntry/PaymentEntryPage';
 import InvoiceBillPage from 'pages/admin-pages/feyzains/invoiceBill/InvoiceBillPage';
+import SearchPage from 'pages/admin-pages/feyzains/search/SearchPage';
+import CheckListPage from 'pages/admin-pages/feyzains/checkList/CheckListPage';
 
 import PanelProvider from 'contexts/admin/PanelContext';
 import PaymentEntryProvider from 'contexts/admin/feyzains/PaymentEntryContext';
@@ -62,6 +64,14 @@ const AdminRoutes = {
     {
       path: 'invoice_bill',
       element: <InvoiceBillPage />
+    },
+    {
+      path: 'search',
+      element: <SearchPage />
+    },
+    {
+      path: 'checklist',
+      element: <CheckListPage />
     }
   ]
 };
