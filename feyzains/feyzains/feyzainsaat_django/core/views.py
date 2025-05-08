@@ -254,6 +254,9 @@ class PaymenInvoiceView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+
+
+
 class PaymenInvoiceDetailView(APIView):
     def get(self, request, pk):
         invoice = get_object_or_404(PaymenInvoice, pk=pk)
@@ -274,3 +277,55 @@ class PaymenInvoiceDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+
+# class OrderPagination(PageNumberPagination):
+#     page_size = 10  # Sayfa başına 50 sipariş
+
+
+# class OrderView(APIView):
+    # def get(self, request):
+
+    #     orders = Order.objects.filter(is_cancelled=False)
+
+    #     orders_serialized = OrderSerializer(orders, many=True).data
+    #     return JsonResponse(orders_serialized, safe=False)
+
+    # def get(self, request):
+    #     search = request.GET.get("search", "")
+    #     seller = request.GET.get("seller", "")
+    #     customer = request.GET.get("customer", "")
+    #     payment_type = request.GET.get("payment_type", "")
+    #     start_date = request.GET.get("start_date", "")
+    #     end_date = request.GET.get("end_date", "")
+    #     hour_range = request.GET.get("hour_range", "")
+
+    #     if request.user.is_authorized == False:
+    #         orders = Order.objects.filter(~Q(payment_type="E-Ticaret"))
+    #     else:
+    #         orders = Order.objects.all()
+
+    #     if search:
+    #         orders = orders.filter(
+    #             Q(customer_nameicontains=search) | Q(selleruserfirst_nameicontains=search) | Q(selleruserlast_name_icontains=search)
+    #         )
+    #     if seller:
+    #         orders = orders.filter(seller_id=seller)
+    #     if customer:
+    #         orders = orders.filter(customer_id=customer)
+    #     if payment_type:
+    #         orders = orders.filter(payment_type=payment_type)
+    #     if start_date and end_date:
+    #         orders = orders.filter(creation_date__range=[start_date, end_date])
+    #     if hour_range:
+    #         now = timezone.now()
+    #         start_time = now - timedelta(hours=int(hour_range))
+    #         orders = orders.filter(creation_date__gte=start_time)
+
+    #     orders = orders.order_by("-creation_date")  # Add this line for sorting by creation_date
+        # orders = orders.select_related("seller", "customer", "warehouse")
+
+        # paginator = OrderPagination()
+        # page = paginator.paginate_queryset(orders, request)
+        # serialized = OrderSerializer(page, many=True)
+
+        # return paginator.get_paginated_response(serialized.data)

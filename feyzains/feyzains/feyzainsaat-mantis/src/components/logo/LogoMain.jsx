@@ -25,7 +25,7 @@ const Logo = () => {
 
     <>
       <Typography variant="h3" color={theme.palette.primary.main}>
-        Feyza İnşaat
+        Melsa İnşaat
       </Typography>
       <svg width="118" height="35" viewBox="0 0 118 35" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path

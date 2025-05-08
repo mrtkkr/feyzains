@@ -153,6 +153,52 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
     }
   };
 
+  //   const fetchOrders = async ({
+  //     page = 1,
+  //     pageSize = 10,
+  //     search = "",
+  //     seller = "",
+  //     customer = "",
+  //     paymentType = "",
+  //     startDate = "",
+  //     endDate = "",
+  //     hourRange = "",
+  //   } = {}) => { // defaults added here to prevent undefined
+  //     setLoading(true);
+  //     setError(null);
+
+  //     const params = new URLSearchParams();
+  //     params.append("page", page || 1);  // page defaulted to 1 if undefined
+  //     params.append("page_size", pageSize || 10);  // page_size defaulted to 10 if undefined
+  //     if (search) params.append("search", search);
+  //     if (seller) params.append("seller", seller);
+  //     if (customer) params.append("customer", customer);
+  //     if (paymentType) params.append("payment_type", paymentType);
+  //     if (startDate && endDate) {
+  //       params.append("start_date", new Date(startDate).toISOString());
+  //       params.append("end_date", new Date(endDate).toISOString());
+  //     }
+  //     if (hourRange) params.append("hour_range", hourRange);
+
+  //     try {
+  //       const res = await sendApiRequest({
+  //         url: core/orders/?${params.toString()},
+  //         method: "GET",
+  //       });
+
+  //       if (res.response.status === 200) {
+  //         setOrders(res.data.results || []);
+  //         setOrderCount(res.data.count || 0);
+  //       } else {
+  //         setError("Siparişler alınırken bir hata oluştu.");
+  //       }
+  //     } catch (error) {
+  //       setError("API çağrısı başarısız oldu.");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
   return (
     <PaymentEntryInvoiceContext.Provider
       value={{
