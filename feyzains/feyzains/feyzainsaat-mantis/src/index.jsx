@@ -34,6 +34,17 @@ import reportWebVitals from './reportWebVitals';
 
 import AuthProvider from './contexts/auth/AuthContext.jsx';
 
+import robotoBase64 from '../src/pages/admin-pages/feyzains/fonts/roboto-base64';
+
+const base64Roboto = `
+  @font-face {
+    font-family: 'Roboto';
+    src: url("data:font/ttf;base64,${robotoBase64}") format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+`;
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 // ==============================|| MAIN - REACT DOM RENDER ||============================== //
@@ -41,6 +52,7 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <AuthProvider>
     {/* <React.StrictMode> */}
+    <style>{base64Roboto}</style>
     <App />
     {/* </React.StrictMode> */}
   </AuthProvider>

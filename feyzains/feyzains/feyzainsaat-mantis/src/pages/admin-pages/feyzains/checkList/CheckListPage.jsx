@@ -34,6 +34,7 @@ import axios from 'axios';
 import { PUBLIC_URL } from '../../../../services/network_service';
 import jsPDF from 'jspdf'; // jsPDF kütüphanesini import et
 import 'jspdf-autotable'; // jsPDF-AutoTable eklentisini import et
+import robotoBase64 from '../fonts/roboto-base64'; // bu dosyayı sen oluşturacaksın
 import { AuthContext } from 'contexts/auth/AuthContext';
 import * as XLSX from 'xlsx';
 
@@ -240,19 +241,30 @@ const CheckListPage = () => {
         return;
       }
 
-      // PDF oluşturma
-      const doc = new jsPDF('l', 'mm', 'a4'); // Yatay (landscape) A4 boyutunda
+      // PDF oluştur
+      const doc = new jsPDF('l', 'mm', 'a4');
 
-      // Başlık ekle
+      // Roboto fontunu ekleyelim - Türkçe karakterleri destekler
+      doc.addFileToVFS('Roboto-Regular.ttf', robotoBase64);
+      doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+      doc.setFont('Roboto');
+
+      // PDF başlığı
       doc.setFontSize(16);
       doc.text('Çek Listesi', 14, 15);
 
-      // Tarih ve sayfa bilgisi ekle
+      // Tarih
       doc.setFontSize(10);
       const today = new Date().toLocaleDateString('tr-TR');
       doc.text(`Oluşturma Tarihi: ${today}`, 14, 22);
 
-      // Filtrelenen verileri PDF için hazırla
+      // Tablo konfigürasyonu - Türkçe karakterli başlıklar
+      const headers = ['Grup', 'Şirket', 'Müşteri', 'Borç', 'Çek No', 'Çek Vade'];
+      const columnWidths = [35, 45, 45, 30, 30, 30];
+      const totalTableWidth = columnWidths.reduce((a, b) => a + b, 0);
+      const marginX = (doc.internal.pageSize.getWidth() - totalTableWidth) / 2;
+
+      // Veri hazırlama
       const filteredData = filteredCheckLists
         .filter((item) => item.check_no)
         .map((item) => [
@@ -264,53 +276,101 @@ const CheckListPage = () => {
           formatDate(item.check_time)
         ]);
 
-      // Tabloyu manuel oluştur (autoTable kullanmadan)
-      // Tablo başlıkları
-      const headers = ['Grup', 'Şirket', 'Müşteri', 'Borç', 'Çek No', 'Çek Vade'];
-      const columnWidths = [30, 40, 40, 30, 25, 25]; // mm cinsinden genişlikler
-
-      // Tablo başlık ve içeriğini oluştur
-      const startY = 30;
+      let currentY = 30;
       const cellHeight = 10;
-      let currentY = startY;
 
-      // Tablo başlıklarını çiz
+      // ÖNEMLİ: Font kodlamasını UTF-8 olarak ayarla
+      doc.setFont('Roboto', 'normal');
+      doc.setFontSize(10);
+
+      // Başlıklar
       doc.setFillColor(66, 66, 66);
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
 
-      let currentX = 10;
+      // İki adımda çizim yaklaşımı
+      // 1. Adım: Kutuları çiz
+      let currentX = marginX;
       headers.forEach((header, i) => {
         doc.rect(currentX, currentY, columnWidths[i], cellHeight, 'F');
-        doc.text(header, currentX + columnWidths[i] / 2, currentY + cellHeight / 2, { align: 'center', baseline: 'middle' });
         currentX += columnWidths[i];
       });
 
-      // Tablo içeriğini çiz
+      // 2. Adım: Metinleri yaz - autoEncode özelliğini true yapıyoruz
+      currentX = marginX;
+      headers.forEach((header, i) => {
+        // PDF-lib için metin kodlaması ve konumlandırma ayarları
+        doc.text(header, currentX + 4, currentY + 7, {
+          charSpace: 0,
+          lineHeightFactor: 1,
+          maxWidth: columnWidths[i] - 8,
+          align: 'left'
+        });
+        currentX += columnWidths[i];
+      });
+
+      // Satır verisi
       currentY += cellHeight;
       doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
       doc.setFontSize(9);
 
-      filteredData.forEach((row, rowIndex) => {
-        if (currentY > 280) {
-          // Sayfa sınırını kontrol et ve gerekirse yeni sayfa ekle
+      filteredData.forEach((row) => {
+        // Yeni sayfa kontrolü
+        if (currentY + cellHeight > doc.internal.pageSize.getHeight() - 10) {
           doc.addPage();
           currentY = 20;
+
+          // Yeni sayfadaki başlıklar
+          currentX = marginX;
+
+          // Kutuları çiz
+          doc.setFillColor(66, 66, 66);
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(10);
+          headers.forEach((header, i) => {
+            doc.rect(currentX, currentY, columnWidths[i], cellHeight, 'F');
+            currentX += columnWidths[i];
+          });
+
+          // Metinleri yaz
+          currentX = marginX;
+          headers.forEach((header, i) => {
+            doc.text(header, currentX + 4, currentY + 7, {
+              charSpace: 0,
+              lineHeightFactor: 1,
+              maxWidth: columnWidths[i] - 8,
+              align: 'left'
+            });
+            currentX += columnWidths[i];
+          });
+
+          currentY += cellHeight;
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(9);
         }
 
-        currentX = 10;
-        row.forEach((cell, colIndex) => {
-          doc.rect(currentX, currentY, columnWidths[colIndex], cellHeight);
-          doc.text(cell.toString(), currentX + 2, currentY + cellHeight / 2, { baseline: 'middle' });
-          currentX += columnWidths[colIndex];
+        // Hücre kutuları
+        currentX = marginX;
+        row.forEach((cell, i) => {
+          doc.rect(currentX, currentY, columnWidths[i], cellHeight);
+          currentX += columnWidths[i];
+        });
+
+        // Hücre metinleri
+        currentX = marginX;
+        row.forEach((cell, i) => {
+          doc.text(cell.toString(), currentX + 4, currentY + 7, {
+            charSpace: 0,
+            lineHeightFactor: 1,
+            maxWidth: columnWidths[i] - 8,
+            align: 'left'
+          });
+          currentX += columnWidths[i];
         });
 
         currentY += cellHeight;
       });
 
-      // PDF dosyasını indir
+      // PDF'i kaydet
       doc.save('Cek_Listesi.pdf');
       toast.success('PDF başarıyla oluşturuldu!');
     } catch (error) {

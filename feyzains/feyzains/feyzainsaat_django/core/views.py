@@ -2,7 +2,7 @@ from django.shortcuts import render
 from accounts.models import User
 from rest_framework.response import Response
 from rest_framework import status
-
+from django.db.models import Q
 
 from .serializers import *
 from .models import *
@@ -238,6 +238,38 @@ class PersonalDetailView(APIView):
         personal = get_object_or_404(Personal, pk=pk)
         personal.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# class PaymenInvoiceView(APIView):
+#     def get(self, request):
+#         invoices = PaymenInvoice.objects.all().order_by('-id')
+
+#         # URL parametrelerinden filtreleme değerlerini al
+#         search = request.GET.get("search", "")
+#         start_date = request.GET.get("start_date", "")
+#         end_date = request.GET.get("end_date", "")
+
+#         # Arama filtresi (örnek olarak müşteri adına göre filtreleme)
+#         if search:
+#             invoices = invoices.filter(
+#                 Q(customer__name__icontains=search) |  # customer bir ForeignKey ise
+#                 Q(invoice_number__icontains=search)     # başka bir alan varsa ona göre de filtrele
+#             )
+
+#         # Tarih aralığı filtresi
+#         if start_date and end_date:
+#             invoices = invoices.filter(date__range=[start_date, end_date])
+
+#         serializer = PaymenInvoiceReadSerializer(invoices, many=True)
+#         return Response(serializer.data)
+
+#     def post(self, request):
+#         serializer = PaymenInvoiceSerializer(data=request.data, context={'request': request})
+#         if serializer.is_valid():
+#             serializer.save(created_by=request.user)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class PaymenInvoiceView(APIView):

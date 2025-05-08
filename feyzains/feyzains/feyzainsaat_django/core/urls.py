@@ -20,6 +20,10 @@ urlpatterns = [
     # path("invoices/", InvoiceView.as_view(), name="invoice_api"),
     path("personal/", PersonalView.as_view(), name="personal_api"),
     path("personals/<int:pk>/", PersonalDetailView.as_view(), name="personal-detail"),
+
+
+    
+
     path("payment_entry_invoice/", PaymenInvoiceView.as_view(), name="payment_entry_invoice_api"),
     path("payment_invoices/<int:pk>/", PaymenInvoiceDetailView.as_view(), name="payment_invoice_detail_api"),
 
