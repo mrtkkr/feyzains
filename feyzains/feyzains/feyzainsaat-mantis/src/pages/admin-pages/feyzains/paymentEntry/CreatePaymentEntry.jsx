@@ -13,8 +13,7 @@ import {
   Grid,
   Box,
   CircularProgress,
-  FormHelperText,
-  Autocomplete
+  FormHelperText
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
@@ -22,10 +21,9 @@ import { tr } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import { sendApiRequest } from '../../../../services/network_service';
-import { create } from 'lodash';
 
 const CreatePaymentEntry = ({ open, onClose }) => {
-  const { createPaymentEntryInvoice, loading } = useContext(PaymentEntryInvoiceContext);
+  const { createPaymentEntry, loading, fetchPaymentEntry } = useContext(PaymentEntryInvoiceContext);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form alanları için state'ler
@@ -38,10 +36,10 @@ const CreatePaymentEntry = ({ open, onClose }) => {
   const [selectedGroup, setSelectedGroup] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [debt, setDebt] = useState('');
   const [bank, setBank] = useState('');
   const [check_no, setCheck_no] = useState('');
   const [check_time, setCheck_time] = useState('');
+  const [debt, setDebt] = useState('');
 
   // Validation errors
   const [errors, setErrors] = useState({});
@@ -121,9 +119,8 @@ const CreatePaymentEntry = ({ open, onClose }) => {
     if (!selectedCompany) newErrors.company = 'Şirket seçimi gereklidir';
     if (!selectedCustomer) newErrors.customer = 'Müşteri seçimi gereklidir';
     if (!bank) newErrors.bank = 'Banka bilgisi gereklidir';
-    if (!check_no) newErrors.check_no = 'Check Numarası bilgisi gereklidir';
-    if (!check_time) newErrors.check_time = 'Check Vade bilgisi gereklidir';
-
+    // if (!check_no) newErrors.check_no = 'Çek Numarası bilgisi gereklidir';
+    // if (!check_time) newErrors.check_time = 'Çek Vade bilgisi gereklidir';
     if (!debt) newErrors.debt = 'Borç tutarı gereklidir';
     else if (isNaN(debt) || parseFloat(debt) <= 0) newErrors.debt = 'Geçerli bir borç tutarı giriniz';
 
@@ -143,17 +140,25 @@ const CreatePaymentEntry = ({ open, onClose }) => {
         group: selectedGroup,
         company: selectedCompany,
         customer: selectedCustomer,
+        bank: bank,
         check_no: check_no,
         check_time: check_time,
-        bank: bank,
         debt: parseFloat(debt),
         type: 'payment'
       };
 
-      const result = await createPaymentEntryInvoice(paymentData);
+      const result = await createPaymentEntry(paymentData);
 
       if (result.success) {
         toast.success('Ödeme kaydı başarıyla oluşturuldu');
+        // Yeni kayıt eklenince ilk sayfayı yeniden çek
+        fetchPaymentEntry({
+          type: 'payment',
+          page: 0, // sayfa 1 (0-indexli yazmışsın yukarıda)
+          pageSize: 10,
+          orderBy: 'date',
+          order: 'desc'
+        });
         resetForm();
         onClose();
       } else {

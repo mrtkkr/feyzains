@@ -29,6 +29,10 @@ import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
+import { CompanyContext } from 'contexts/admin/feyzains/CompanyContext';
+import { WorksiteContext } from 'contexts/admin/feyzains/WorksiteContext';
+import { GroupContext } from 'contexts/admin/feyzains/GroupContext';
+import { CustomerContext } from 'contexts/admin/feyzains/CustomerContext';
 import axios from 'axios';
 import { PUBLIC_URL } from '../../../../services/network_service';
 import CreatePaymentEntry from './CreatePaymentEntry';
@@ -67,15 +71,18 @@ function getComparator(order, orderBy) {
 
 const PaymentEntryPage = () => {
   // Context
-  const { paymentEntryInvoices, loading, error, fetchPaymentEntryInvoices, deletePaymentEntryInvoice } =
-    useContext(PaymentEntryInvoiceContext);
+  const { payments, count, loading, error, fetchPaymentEntry, deletePaymentEntry } = useContext(PaymentEntryInvoiceContext);
   const { fetchUser } = useContext(AuthContext);
+  const { fetchCompanies, companies } = useContext(CompanyContext);
+  const { fetchWorksites, worksites } = useContext(WorksiteContext);
+  const { fetchGroups, groups } = useContext(GroupContext);
+  const { fetchCustomers, customers } = useContext(CustomerContext);
 
   // States
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isEditPaymentDialogOpen, setIsEditPaymentDialogOpen] = useState(false);
   const [isCreatePaymentDialogOpen, setIsCreatePaymentDialogOpen] = useState(false);
   const [isViewPaymentDialogOpen, setIsViewPaymentDialogOpen] = useState(false);
@@ -89,8 +96,6 @@ const PaymentEntryPage = () => {
 
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
   useEffect(() => {
-    fetchPaymentEntryInvoices();
-
     // Kullanıcı bilgilerini al
     const initializeUser = async () => {
       try {
@@ -106,14 +111,24 @@ const PaymentEntryPage = () => {
     };
 
     initializeUser();
-  }, [fetchPaymentEntryInvoices]); // fetchPayments'i bağımlılık olarak ekleyin
+  }, []); // fetchPayments'i bağımlılık olarak ekleyin
 
-  // Ödeme sayısını güncelleme
   useEffect(() => {
-    if (paymentEntryInvoices) {
-      setPaymentCount(paymentEntryInvoices.length);
-    }
-  }, [paymentEntryInvoices]);
+    fetchPaymentEntry({
+      type: 'payment',
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order
+    });
+  }, [page, rowsPerPage, orderBy, order]);
+
+  useEffect(() => {
+    fetchCompanies();
+    fetchWorksites();
+    fetchGroups();
+    fetchCustomers();
+  }, []);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -122,6 +137,7 @@ const PaymentEntryPage = () => {
   };
 
   const handleChangePage = (event, newPage) => {
+    console.log('newPage', newPage);
     setPage(newPage);
   };
 
@@ -130,9 +146,46 @@ const PaymentEntryPage = () => {
     setPage(0);
   };
 
+  const handleEditPaymentClick = (id) => {
+    setSelectedPaymentId(id);
+    setIsEditPaymentDialogOpen(true);
+  };
+
   const handleViewPaymentClick = (id) => {
     setSelectedPaymentId(id);
     setIsViewPaymentDialogOpen(true);
+  };
+
+  const handleEditPayment = () => {
+    setIsEditPaymentDialogOpen(false);
+    setSelectedPaymentId(null);
+
+    fetchPaymentEntry({
+      type: 'payment',
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order
+    });
+  };
+
+  const handleCreatePayment = (paymentId) => {
+    setIsCreatePaymentDialogOpen(false);
+    setSelectedPaymentId(paymentId);
+    fetchPaymentEntry({
+      type: 'payment',
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order
+    });
+  };
+
+  const handleCreateDialogClose = () => {
+    setIsCreatePaymentDialogOpen(false);
+    setSelectedPaymentId(null);
+
+    // Buraya fetch gelebilir
   };
 
   const handleCloseViewDialog = () => {
@@ -140,25 +193,29 @@ const PaymentEntryPage = () => {
     setSelectedPaymentId(null);
   };
 
-  const handleEditPaymentClick = (id) => {
-    setSelectedPaymentId(id);
+  const handleOpenEditDialog = (paymentId) => {
+    setSelectedPaymentId(paymentId);
     setIsEditPaymentDialogOpen(true);
   };
-
-  const handleEditPayment = () => {
+  // Dialog'u kapatmak için kullanılacak fonksiyon
+  const handleCloseEditDialog = () => {
     setIsEditPaymentDialogOpen(false);
     setSelectedPaymentId(null);
-    // Trigger a refresh only when needed
-    setRefreshTrigger((prev) => prev + 1);
   };
 
   const handleDeletePayment = async (id) => {
     if (window.confirm('Bu ödeme kaydını silmek istediğinizden emin misiniz?')) {
       try {
-        const response = await deletePaymentEntryInvoice(id);
+        const response = await deletePaymentEntry(id);
         if (response && response.success) {
           toast.success('Ödeme kaydı başarıyla silindi');
-          // We don't need to fetch again as deletePayment updates the local state
+          fetchPaymentEntry({
+            type: 'payment',
+            page: page,
+            pageSize: rowsPerPage,
+            orderBy: orderBy,
+            order: order
+          });
         } else {
           toast.error(response?.error || 'Ödeme kaydı silinemedi');
         }
@@ -173,23 +230,6 @@ const PaymentEntryPage = () => {
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
   };
-
-  const handleCreateDialogClose = () => {
-    setIsCreatePaymentDialogOpen(false);
-    // Trigger a refresh only when needed
-    setRefreshTrigger((prev) => prev + 1);
-  };
-
-  const refreshData = useCallback(() => {
-    fetchPaymentEntryInvoices(true); // Force refresh
-  }, [fetchPaymentEntryInvoices]);
-
-  // Use the refresh trigger to control when to refresh data
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      refreshData();
-    }
-  }, [refreshTrigger, refreshData]);
 
   const importFromExcel = async () => {
     if (!selectedFile) {
@@ -230,12 +270,12 @@ const PaymentEntryPage = () => {
 
   const exportToExcel = async () => {
     try {
-      if (!paymentEntryInvoices || paymentEntryInvoices.length === 0) {
+      if (!payments || payments.length === 0) {
         toast.warning('Excel için ödeme verisi bulunamadı!');
         return;
       }
 
-      const data = paymentEntryInvoices.map((paymentEntryInvoice) => ({
+      const data = payments.map((paymentEntryInvoice) => ({
         Tarih: formatDate(paymentEntryInvoice.date),
         Şantiye: paymentEntryInvoice.worksite?.name || '-',
         Grup: paymentEntryInvoice.group?.name || '-',
@@ -289,33 +329,9 @@ const PaymentEntryPage = () => {
     }
   };
 
-  const filteredPayments = useMemo(() => {
-    if (!paymentEntryInvoices) return [];
-
-    const searchLower = (searchQuery || '').toLowerCase();
-
-    return paymentEntryInvoices.filter((paymentEntryInvoice) => {
-      const worksiteName = paymentEntryInvoice?.worksite?.name?.toLowerCase() || '';
-      const companyName = paymentEntryInvoice?.company?.name?.toLowerCase() || '';
-      const customerName = paymentEntryInvoice?.customer?.name?.toLowerCase() || '';
-      const bank = (paymentEntryInvoice?.bank || '').toLowerCase();
-      const debt = paymentEntryInvoice?.debt?.toString() || '';
-      const groupName = paymentEntryInvoice?.group?.name?.toLowerCase() || '';
-
-      return (
-        worksiteName.includes(searchLower) ||
-        companyName.includes(searchLower) ||
-        customerName.includes(searchLower) ||
-        bank.includes(searchLower) ||
-        debt.includes(searchLower) ||
-        groupName.includes(searchLower)
-      );
-    });
-  }, [paymentEntryInvoices, searchQuery]);
-
   const visiblePaymentRows = useMemo(() => {
-    return filteredPayments.sort(getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [filteredPayments, order, orderBy, page, rowsPerPage]);
+    return payments.sort(getComparator(order, orderBy));
+  }, [payments, order, orderBy]);
 
   // IMPORTANT: Using memoized props to pass to child components
   const viewPaymentProps = useMemo(
@@ -327,10 +343,11 @@ const PaymentEntryPage = () => {
     [isViewPaymentDialogOpen, selectedPaymentId]
   );
 
+  // EditPaymentEntry için props
   const editPaymentProps = useMemo(
     () => ({
       open: isEditPaymentDialogOpen,
-      onClose: handleEditPayment,
+      onClose: handleCloseEditDialog,
       paymentId: selectedPaymentId
     }),
     [isEditPaymentDialogOpen, selectedPaymentId]
@@ -436,43 +453,41 @@ const PaymentEntryPage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {visiblePaymentRows.filter((row) => row.type === 'payment').length > 0 ? (
-                  visiblePaymentRows
-                    .filter((row) => row.type === 'payment')
-                    .map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell>{formatDate(payment.date)}</TableCell>
-                        <TableCell>{payment.worksite?.name || '-'}</TableCell>
-                        <TableCell>{payment.group?.name || '-'}</TableCell>
-                        <TableCell>{payment.company?.name || '-'}</TableCell>
-                        <TableCell>{payment.customer?.name || '-'}</TableCell>
-                        <TableCell>{payment.bank || '-'}</TableCell>
-                        <TableCell>{payment.check_no || '-'}</TableCell>
-                        <TableCell>{formatDate(payment.check_time)}</TableCell>
-                        <TableCell>{formatNumber(payment.debt)}</TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Detay">
-                            <IconButton onClick={() => handleViewPaymentClick(payment.id)}>
-                              <VisibilityIcon />
-                            </IconButton>
-                          </Tooltip>
-                          {isAdmin && (
-                            <>
-                              <Tooltip title="Düzenle">
-                                <IconButton onClick={() => handleEditPaymentClick(payment.id)}>
-                                  <EditIcon />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Sil">
-                                <IconButton onClick={() => handleDeletePayment(payment.id)}>
-                                  <DeleteIcon />
-                                </IconButton>
-                              </Tooltip>
-                            </>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                {visiblePaymentRows.length > 0 ? (
+                  visiblePaymentRows.map((payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell>{formatDate(payment.date)}</TableCell>
+                      <TableCell>{payment.worksite?.name || '-'}</TableCell>
+                      <TableCell>{payment.group?.name || '-'}</TableCell>
+                      <TableCell>{payment.company?.name || '-'}</TableCell>
+                      <TableCell>{payment.customer?.name || '-'}</TableCell>
+                      <TableCell>{payment.bank || '-'}</TableCell>
+                      <TableCell>{payment.check_no || '-'}</TableCell>
+                      <TableCell>{formatDate(payment.check_time)}</TableCell>
+                      <TableCell>{formatNumber(payment.debt)}</TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Detay">
+                          <IconButton onClick={() => handleViewPaymentClick(payment.id)}>
+                            <VisibilityIcon />
+                          </IconButton>
+                        </Tooltip>
+                        {isAdmin && (
+                          <>
+                            <Tooltip title="Düzenle">
+                              <IconButton onClick={() => handleEditPaymentClick(payment.id)}>
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Sil">
+                              <IconButton type="button" onClick={() => handleDeletePayment(payment.id)}>
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
                 ) : (
                   <TableRow>
                     <TableCell colSpan={10} align="center">
@@ -488,7 +503,7 @@ const PaymentEntryPage = () => {
           <TablePagination
             rowsPerPageOptions={[10, 25, 50]}
             component="div"
-            count={filteredPayments.length}
+            count={count}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}

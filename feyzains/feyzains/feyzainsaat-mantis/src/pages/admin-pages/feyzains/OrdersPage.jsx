@@ -117,7 +117,6 @@ const OrdersPage = () => {
   const [selectedOrderToCancel, setSelectedOrderToCancel] = useState(null);
   const [createdOrderId, setCreatedOrderId] = useState(null);
 
-
   useEffect(() => {
     const initializeUser = async () => {
       const user = await fetchUser();
@@ -220,7 +219,7 @@ const OrdersPage = () => {
 
   const handleCreateOrder = (orderId) => {
     setIsCreateOrderDialogOpen(false);
-    if (typeof orderId === "number" || typeof orderId === "string") {
+    if (typeof orderId === 'number' || typeof orderId === 'string') {
       setSelectedOrderId(orderId);
       setIsViewOrderDialogOpen(true);
     }
@@ -322,19 +321,18 @@ const OrdersPage = () => {
     setCancelNote('');
     setCancelDialogOpen(true);
   };
-  
 
   const confirmCancelOrder = async () => {
     if (!selectedOrderToCancel) return;
-  
+
     const cancelData = {
       id: selectedOrderToCancel.id,
       type: 'cancel',
       note: cancelNote
     };
-  
+
     const response = await cancelOrder(cancelData);
-  
+
     if (response.success) {
       toast.success('Sipariş iptal edildi.');
       setCancelDialogOpen(false);
@@ -354,7 +352,6 @@ const OrdersPage = () => {
       toast.error(response.message || 'Sipariş iptal edilemedi.');
     }
   };
-  
 
   const exportAllOrdersToExcel = async () => {
     try {
@@ -400,7 +397,7 @@ const OrdersPage = () => {
         TUTAR: formatNumber(order.price),
         DURUM: order.status,
         MUSTERI: order.customer?.name || '',
-        'MUSTERI TELEFON': order?.phone ? order.phone : (order.customer?.phone || ''),
+        'MUSTERI TELEFON': order?.phone ? order.phone : order.customer?.phone || '',
         'MUSTERI İL': order.customer?.city || '',
         'MUSTERI İLÇE': order.customer?.district || '',
         'MUSTERI ADRES': order.customer?.address || '',
@@ -607,6 +604,7 @@ const OrdersPage = () => {
         </Box>
       </Box>
       <CreateOrderPage open={isCreateOrderDialogOpen} onClose={handleCreateOrder} />
+
       {isEditOrderDialogOpen && selectedOrderId && (
         <EditOrderPage open={isEditOrderDialogOpen} onClose={() => handleEditOrder()} orderId={selectedOrderId} />
       )}

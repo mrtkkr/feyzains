@@ -29,7 +29,12 @@ import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // PDF ikonu ekle
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import trLocale from 'date-fns/locale/tr';
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
+import { CustomerContext } from 'contexts/admin/feyzains/CustomerContext';
+import { CompanyContext } from 'contexts/admin/feyzains/CompanyContext';
 import axios from 'axios';
 import { PUBLIC_URL } from '../../../../services/network_service';
 import jsPDF from 'jspdf'; // jsPDF kütüphanesini import et
@@ -68,17 +73,26 @@ function getComparator(order, orderBy) {
 
 const CheckListPage = () => {
   // Context
-  const { paymentEntryInvoices, loading, error, fetchPaymentEntryInvoices } = useContext(PaymentEntryInvoiceContext);
+  const { paymentEntryInvoices, count, checklists, loading, error, fetchChecklists, fetchPaymentEntryInvoices } =
+    useContext(PaymentEntryInvoiceContext);
+
+  const { customers, fetchCustomers } = useContext(CustomerContext);
+  const { companies, fetchCompanies } = useContext(CompanyContext);
+
   const { fetchUser } = useContext(AuthContext);
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
 
   // States
   const [order, setOrder] = useState('asc');
-  const [orderBy, setOrderBy] = useState('date');
+  const [orderBy, setOrderBy] = useState('check_time');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [searchQuery4, setSearchQuery4] = useState('');
+  const [companySearch, setCompanySearch] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [CheckListCount, setCheckListCount] = useState(0);
@@ -86,8 +100,6 @@ const CheckListPage = () => {
 
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
   useEffect(() => {
-    fetchPaymentEntryInvoices();
-
     // Kullanıcı bilgilerini al
     const initializeUser = async () => {
       try {
@@ -103,14 +115,21 @@ const CheckListPage = () => {
     };
 
     initializeUser();
-  }, [fetchPaymentEntryInvoices]); // fetchPayments'i bağımlılık olarak ekleyin
+  }, []);
 
-  // Fatura sayısını güncelleme
   useEffect(() => {
-    if (paymentEntryInvoices) {
-      setCheckListCount(paymentEntryInvoices.length);
-    }
-  }, [paymentEntryInvoices]);
+    fetchChecklists({
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order
+    });
+  }, [page, rowsPerPage, orderBy, order]);
+
+  useEffect(() => {
+    fetchCompanies();
+    fetchCustomers();
+  }, []);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -119,6 +138,7 @@ const CheckListPage = () => {
   };
 
   const handleChangePage = (event, newPage) => {
+    console.log('newPage', newPage);
     setPage(newPage);
   };
 
@@ -132,16 +152,7 @@ const CheckListPage = () => {
     setSelectedFile(event.target.files[0]);
   };
 
-  const refreshData = useCallback(() => {
-    fetchPaymentEntryInvoices(true); // Force refresh
-  }, [fetchPaymentEntryInvoices]);
-
   // Use the refresh trigger to control when to refresh data
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      refreshData();
-    }
-  }, [refreshTrigger, refreshData]);
 
   const importFromExcel = async () => {
     if (!selectedFile) {
@@ -180,14 +191,29 @@ const CheckListPage = () => {
     }
   };
 
+  const handleFilter = () => {
+    const formattedStart = startDate?.toISOString().split('T')[0];
+    const formattedEnd = endDate?.toISOString().split('T')[0];
+    fetchChecklists({
+      startDate: formattedStart,
+      endDate: formattedEnd,
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order,
+      company: companySearch,
+      customer: customerSearch
+    });
+  };
+
   const exportToExcel = async () => {
     try {
-      if (!paymentEntryInvoices || paymentEntryInvoices.length === 0) {
+      if (!checklists || checklists.length === 0) {
         toast.warning('Excel için fatura verisi bulunamadı!');
         return;
       }
 
-      const data = paymentEntryInvoices.map((paymentEntryInvoice) => ({
+      const data = checklists.map((paymentEntryInvoice) => ({
         Banka: paymentEntryInvoice.bank || '-',
         Şirket: paymentEntryInvoice.company?.name || '-',
         Müşteri: paymentEntryInvoice.customer?.name || '-',
@@ -236,7 +262,7 @@ const CheckListPage = () => {
   // PDF'e aktarma fonksiyonu
   const exportToPdf = () => {
     try {
-      if (!paymentEntryInvoices || paymentEntryInvoices.length === 0) {
+      if (!checklists || checklists.length === 0) {
         toast.warning('PDF için çek verisi bulunamadı!');
         return;
       }
@@ -265,7 +291,7 @@ const CheckListPage = () => {
       const marginX = (doc.internal.pageSize.getWidth() - totalTableWidth) / 2;
 
       // Veri hazırlama
-      const filteredData = filteredCheckLists
+      const filteredData = checklists
         .filter((item) => item.check_no)
         .map((item) => [
           item.bank || '-',
@@ -379,59 +405,69 @@ const CheckListPage = () => {
     }
   };
 
-  const filteredCheckLists = useMemo(() => {
-    if (!paymentEntryInvoices) return [];
-
-    const searchLower = (searchQuery4 || '').toLowerCase();
-
-    return paymentEntryInvoices.filter((paymentEntryInvoice) => {
-      const companyName = paymentEntryInvoice?.company?.name?.toLowerCase() || '';
-      const customerName = paymentEntryInvoice?.customer?.name?.toLowerCase() || '';
-      const bank = (paymentEntryInvoice?.bank || '').toLowerCase();
-      const checkNo = (paymentEntryInvoice?.check_no || '').toLowerCase();
-      const checkTime = paymentEntryInvoice?.check_time ? formatDate(paymentEntryInvoice.check_time) : '';
-      const debt = paymentEntryInvoice?.debt?.toString() || '';
-      const createdBy = paymentEntryInvoice?.created_by?.username?.toLowerCase() || '';
-
-      return (
-        companyName.includes(searchLower) ||
-        customerName.includes(searchLower) ||
-        bank.includes(searchLower) ||
-        checkNo.includes(searchLower) ||
-        checkTime.includes(searchLower) ||
-        debt.includes(searchLower) ||
-        createdBy.includes(searchLower)
-      );
-    });
-  }, [paymentEntryInvoices, searchQuery4]);
-
   const visibleCheckListRows = useMemo(() => {
-    return filteredCheckLists.sort(getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [filteredCheckLists, order, orderBy, page, rowsPerPage]);
+    return checklists.sort(getComparator(order, orderBy));
+  }, [checklists, order, orderBy]);
 
   // IMPORTANT: Using memoized props to pass to child components
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h5" component="h1">
-          Çek Listesi
-        </Typography>
-        <Box display="flex" alignItems="center">
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Genel Ara..."
-            value={searchQuery4}
-            onChange={(e) => setSearchQuery4(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              )
-            }}
-          />
+        <Box display="flex" alignItems="center" gap={1}>
+          <Box display="flex" alignItems="center" gap={1} mx={2}>
+            <TextField
+              variant="outlined"
+              size="small"
+              placeholder="Şirket Ara..."
+              value={companySearch}
+              onChange={(e) => setCompanySearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                )
+              }}
+            />
+            <TextField
+              variant="outlined"
+              size="small"
+              placeholder="Müşteri Ara..."
+              value={customerSearch}
+              onChange={(e) => setCustomerSearch(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                )
+              }}
+            />
+          </Box>
+          {/* 🔽 Tarih filtreleri buraya eklendi */}
+          <Box display="flex" alignItems="center" gap={1} mx={2}>
+            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={trLocale}>
+              <DatePicker
+                label="Başlangıç"
+                value={startDate}
+                onChange={(newValue) => setStartDate(newValue)}
+                slotProps={{ textField: { size: 'medium', variant: 'outlined', sx: { ml: 2 } } }}
+              />
+              <DatePicker
+                label="Bitiş"
+                value={endDate}
+                minDate={startDate}
+                onChange={(newValue) => setEndDate(newValue)}
+                slotProps={{ textField: { size: 'medium', variant: 'outlined', sx: { ml: 2 } } }}
+              />
+              <Button variant="contained" color="primary" size="small" onClick={handleFilter} sx={{ ml: 2 }}>
+                Filtrele
+              </Button>
+            </LocalizationProvider>
+          </Box>
+        </Box>
+        <Box display="flex" alignItems="center" gap={1} mx={2}>
           <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
             PDF'e Aktar
           </Button>
@@ -464,26 +500,24 @@ const CheckListPage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {visibleCheckListRows.filter((item) => item.check_no).length > 0 ? (
-                  visibleCheckListRows
-                    .filter((item) => item.check_no)
-                    .map((paymentEntryInvoices) => (
-                      <TableRow key={paymentEntryInvoices.id}>
-                        <TableCell>{paymentEntryInvoices.bank || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.company?.name || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.customer?.name || '-'}</TableCell>
-                        <TableCell>{formatNumber(paymentEntryInvoices.debt)}</TableCell>
-                        <TableCell>{paymentEntryInvoices.check_no || '-'}</TableCell>
-                        <TableCell>{formatDate(paymentEntryInvoices.check_time)}</TableCell>
-                      </TableRow>
-                    ))
+                {visibleCheckListRows.length > 0 ? (
+                  visibleCheckListRows.map((checklists) => (
+                    <TableRow key={checklists.id}>
+                      <TableCell>{checklists.bank || '-'}</TableCell>
+                      <TableCell>{checklists.company?.name || '-'}</TableCell>
+                      <TableCell>{checklists.customer?.name || '-'}</TableCell>
+                      <TableCell>{formatNumber(checklists.debt)}</TableCell>
+                      <TableCell>{checklists.check_no || '-'}</TableCell>
+                      <TableCell>{formatDate(checklists.check_time)}</TableCell>
+                    </TableRow>
+                  ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={13} align="center">
+                    {/* <TableCell colSpan={13} align="center">
                       <Typography variant="body1" py={2}>
-                        {searchQuery4 ? 'Arama kriterlerinize uygun fatura kaydı bulunamadı.' : 'Henüz fatura kaydı bulunmamaktadır.'}
+                        {searchQuery4 ? 'Arama kriterlerinize uygun fatura kaydı bulunamadı.' : 'Henüz Çek listesi bulunmamaktadır.'}
                       </Typography>
-                    </TableCell>
+                    </TableCell> */}
                   </TableRow>
                 )}
               </TableBody>
@@ -492,7 +526,7 @@ const CheckListPage = () => {
           <TablePagination
             rowsPerPageOptions={[10, 25, 50]}
             component="div"
-            count={filteredCheckLists.length}
+            count={count} // Artık burada context'teki count kullanılıyor
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}

@@ -29,7 +29,7 @@ const formatNumber = (number) => {
 };
 
 const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
-  const { getPaymentEntryInvoiceById } = useContext(PaymentEntryInvoiceContext);
+  const { getPaymentEntryById } = useContext(PaymentEntryInvoiceContext);
   const { fetchUser } = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(true);
   const [payment, setPayment] = useState(null);
@@ -56,7 +56,7 @@ const ViewPaymentEntry = ({ open, onClose, paymentId }) => {
   const fetchPaymentDetails = async () => {
     setIsLoading(true);
     try {
-      const result = await getPaymentEntryInvoiceById(paymentId);
+      const result = await getPaymentEntryById(paymentId);
       if (result.success) {
         setPayment(result.data);
       }

@@ -114,3 +114,4 @@ class PaymenInvoiceReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymenInvoice
         fields = '__all__'
+        

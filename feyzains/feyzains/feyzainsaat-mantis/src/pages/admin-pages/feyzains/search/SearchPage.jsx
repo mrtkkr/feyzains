@@ -67,7 +67,7 @@ function getComparator(order, orderBy) {
 
 const SearchPage = () => {
   // Context
-  const { paymentEntryInvoices, loading, error, fetchPaymentEntryInvoices } = useContext(PaymentEntryInvoiceContext);
+  const { searchs, loading, error, fetchSearchs } = useContext(PaymentEntryInvoiceContext);
   const { fetchUser } = useContext(AuthContext);
 
   // States
@@ -85,7 +85,7 @@ const SearchPage = () => {
 
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
   useEffect(() => {
-    fetchPaymentEntryInvoices();
+    fetchSearchs();
 
     // Kullanıcı bilgilerini al
     const initializeUser = async () => {
@@ -102,14 +102,14 @@ const SearchPage = () => {
     };
 
     initializeUser();
-  }, [fetchPaymentEntryInvoices]); // fetchPayments'i bağımlılık olarak ekleyin
+  }, [fetchSearchs]); // fetchPayments'i bağımlılık olarak ekleyin
 
   // Fatura sayısını güncelleme
   useEffect(() => {
-    if (paymentEntryInvoices) {
-      setSearchCount(paymentEntryInvoices.length);
+    if (searchs) {
+      setSearchCount(searchs.length);
     }
-  }, [paymentEntryInvoices]);
+  }, [searchs]);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -132,8 +132,8 @@ const SearchPage = () => {
   };
 
   const refreshData = useCallback(() => {
-    fetchPaymentEntryInvoices(true); // Force refresh
-  }, [fetchPaymentEntryInvoices]);
+    fetchSearchs(true); // Force refresh
+  }, [fetchSearchs]);
 
   // Use the refresh trigger to control when to refresh data
   useEffect(() => {
@@ -181,12 +181,12 @@ const SearchPage = () => {
 
   const exportToExcel = async () => {
     try {
-      if (!paymentEntryInvoices || paymentEntryInvoices.length === 0) {
+      if (!searchs || searchs.length === 0) {
         toast.warning('Excel için fatura verisi bulunamadı!');
         return;
       }
 
-      const data = paymentEntryInvoices.map((paymentEntryInvoice) => ({
+      const data = searchs.map((paymentEntryInvoice) => ({
         Tarih: formatDate(paymentEntryInvoice.date),
         Şantiye: paymentEntryInvoice.worksite?.name || '-',
         Grup: paymentEntryInvoice.group?.name || '-',
@@ -374,11 +374,11 @@ const SearchPage = () => {
   // };
 
   const filteredSearchs = useMemo(() => {
-    if (!paymentEntryInvoices) return [];
+    if (!searchs) return [];
 
     const searchLower = (searchQuery3 || '').toLowerCase();
 
-    return paymentEntryInvoices.filter((paymentEntryInvoice) => {
+    return searchs.filter((paymentEntryInvoice) => {
       const worksiteName = paymentEntryInvoice?.worksite?.name?.toLowerCase() || '';
       const groupName = paymentEntryInvoice?.group?.name?.toLowerCase() || '';
       const companyName = paymentEntryInvoice?.company?.name?.toLowerCase() || '';
@@ -413,7 +413,7 @@ const SearchPage = () => {
         date.includes(searchLower)
       );
     });
-  }, [paymentEntryInvoices, searchQuery3]);
+  }, [searchs, searchQuery3]);
 
   const visibleSearchRows = useMemo(() => {
     return filteredSearchs.sort(getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
@@ -485,24 +485,24 @@ const SearchPage = () => {
               </TableHead>
               <TableBody>
                 {visibleSearchRows.length > 0 ? (
-                  visibleSearchRows.map((paymentEntryInvoices) => (
-                    <TableRow key={paymentEntryInvoices.id}>
-                      <TableCell>{formatDate(paymentEntryInvoices.date)}</TableCell>
-                      <TableCell>{paymentEntryInvoices.worksite?.name || '-'}</TableCell>
-                      <TableCell>{paymentEntryInvoices.group?.name || '-'}</TableCell>
-                      <TableCell>{paymentEntryInvoices.company?.name || '-'}</TableCell>
-                      <TableCell>{paymentEntryInvoices.customer?.name || '-'}</TableCell>
-                      <TableCell>{paymentEntryInvoices.bank || '-'}</TableCell>
-                      <TableCell>{paymentEntryInvoices.check_no || '-'}</TableCell>
-                      <TableCell>{formatDate(paymentEntryInvoices.check_time)}</TableCell>
-                      <TableCell>{paymentEntryInvoices.material || '-'}</TableCell>
-                      <TableCell>{paymentEntryInvoices.quantity || '-'}</TableCell>
-                      <TableCell>{formatNumber(paymentEntryInvoices.unit_price)}</TableCell>
-                      <TableCell>{formatNumber(paymentEntryInvoices.price)}</TableCell>
-                      <TableCell>{paymentEntryInvoices.tax || '-'}</TableCell>
-                      <TableCell>{paymentEntryInvoices.withholding || '-'}</TableCell>
-                      <TableCell>{formatNumber(paymentEntryInvoices.receivable) || '-'}</TableCell>
-                      <TableCell>{formatNumber(paymentEntryInvoices.debt) || '-'}</TableCell>
+                  visibleSearchRows.map((searchs) => (
+                    <TableRow key={searchs.id}>
+                      <TableCell>{formatDate(searchs.date)}</TableCell>
+                      <TableCell>{searchs.worksite?.name || '-'}</TableCell>
+                      <TableCell>{searchs.group?.name || '-'}</TableCell>
+                      <TableCell>{searchs.company?.name || '-'}</TableCell>
+                      <TableCell>{searchs.customer?.name || '-'}</TableCell>
+                      <TableCell>{searchs.bank || '-'}</TableCell>
+                      <TableCell>{searchs.check_no || '-'}</TableCell>
+                      <TableCell>{formatDate(searchs.check_time)}</TableCell>
+                      <TableCell>{searchs.material || '-'}</TableCell>
+                      <TableCell>{searchs.quantity || '-'}</TableCell>
+                      <TableCell>{formatNumber(searchs.unit_price)}</TableCell>
+                      <TableCell>{formatNumber(searchs.price)}</TableCell>
+                      <TableCell>{searchs.tax || '-'}</TableCell>
+                      <TableCell>{searchs.withholding || '-'}</TableCell>
+                      <TableCell>{formatNumber(searchs.receivable) || '-'}</TableCell>
+                      <TableCell>{formatNumber(searchs.debt) || '-'}</TableCell>
                     </TableRow>
                   ))
                 ) : (

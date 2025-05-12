@@ -24,7 +24,7 @@ import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/
 import { sendApiRequest } from '../../../../services/network_service';
 
 const CreateInvoiceEntry = ({ open, onClose }) => {
-  const { createPaymentEntryInvoice, loading } = useContext(PaymentEntryInvoiceContext);
+  const { createInvoice, loading, fetchInvoice } = useContext(PaymentEntryInvoiceContext);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form alanları için state'ler
@@ -162,10 +162,17 @@ const CreateInvoiceEntry = ({ open, onClose }) => {
         type: 'invoice'
       };
 
-      const result = await createPaymentEntryInvoice(invoiceData);
+      const result = await createInvoice(invoiceData);
 
       if (result.success) {
         toast.success('Fatura kaydı başarıyla oluşturuldu');
+        fetchInvoice({
+          type: 'invoice',
+          page: 0,
+          pageSize: 10,
+          orderBy: 'date',
+          order: 'desc'
+        });
         resetForm();
         onClose();
       } else {

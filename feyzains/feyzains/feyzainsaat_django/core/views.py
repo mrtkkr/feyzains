@@ -1,13 +1,17 @@
+from email.utils import parsedate
 from django.shortcuts import render
 from accounts.models import User
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
-
+from datetime import datetime,time
 from .serializers import *
 from .models import *
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from rest_framework.pagination import PageNumberPagination
+from django.utils.timezone import make_aware
+
 
 
 # Create your views here.
@@ -273,17 +277,33 @@ class PersonalDetailView(APIView):
 
 
 class PaymenInvoiceView(APIView):
+    # def get(self, request):
+        
+    #     invoices = PaymenInvoice.objects.all().order_by('-id')
+    #     serializer = PaymenInvoiceReadSerializer(invoices, many=True)
+    #     return Response(serializer.data)
+
     def get(self, request):
-        invoices = PaymenInvoice.objects.all().order_by('-id')
+        type_param = request.query_params.get('type')  # ?type=payment veya ?type=invoice
+        
+        if type_param:
+            invoices = PaymenInvoice.objects.filter(type=type_param).order_by('-id')
+        else:
+            invoices = PaymenInvoice.objects.all().order_by('-id')
+
         serializer = PaymenInvoiceReadSerializer(invoices, many=True)
+
+        print(f"Gelen type: {type_param}")
+        
+
         return Response(serializer.data)
 
-    def post(self, request):
-        serializer = PaymenInvoiceSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save(created_by=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # def post(self, request):
+    #     serializer = PaymenInvoiceSerializer(data=request.data, context={'request': request})
+    #     if serializer.is_valid():
+    #         serializer.save(created_by=request.user)
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -309,6 +329,97 @@ class PaymenInvoiceDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+
+class ChecklistPagination(PageNumberPagination):
+    page_size = 10
+
+class ChecklistView(APIView):
+    def get(self, request):
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        order_by = request.query_params.get('order_by', 'check_time')  # default: check_time
+        order = request.query_params.get('order', 'desc')  # default: descending
+        company = request.query_params.get('company', '')
+        customer = request.query_params.get('customer', '')
+
+        checklists = PaymenInvoice.objects.filter(
+            Q(check_no__isnull=False) & ~Q(check_no='')
+        )
+
+        if start_date and end_date:
+            try:
+                start = make_aware(datetime.combine(datetime.strptime(start_date, '%Y-%m-%d').date(), time.min))
+                end = make_aware(datetime.combine(datetime.strptime(end_date, '%Y-%m-%d').date(), time.max))
+
+                checklists = checklists.filter(check_time__range=(start, end))
+
+                
+            except ValueError:
+                return Response({'error': 'Tarih formatı hatalı. Format: YYYY-MM-DD olmalı.'}, status=400)
+            
+        # Şirket adına göre filtreleme (case-insensitive)
+        if company:
+            checklists = checklists.filter(company__name__icontains=company)
+
+        # Müşteri adına göre filtreleme (case-insensitive)
+        if customer:
+            checklists = checklists.filter(customer__name__icontains=customer)
+
+        if order == 'desc':
+                checklists = checklists.order_by(f'-{order_by}')
+        else:
+                checklists = checklists.order_by(order_by)
+
+        paginator = ChecklistPagination()
+        result_page = paginator.paginate_queryset(checklists, request)
+        serializer = PaymenInvoiceReadSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+
+
+class SearchPagelistView(APIView):
+    def get(self, request):
+        searchPage = PaymenInvoice.objects.all().order_by('-id')
+        serializer = PaymenInvoiceReadSerializer(searchPage, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = PaymenInvoiceSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save(created_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class SearchPageDetailView(APIView):
+    def get(self, request, pk):
+        searchPage = get_object_or_404(PaymenInvoice, pk=pk)
+        serializer = PaymenInvoiceReadSerializer(searchPage)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        searchPage = get_object_or_404(PaymenInvoice, pk=pk)
+        serializer = PaymenInvoiceSerializer(searchPage, data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(PaymenInvoiceReadSerializer(searchPage).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        searchPage = get_object_or_404(PaymenInvoice, pk=pk)
+        searchPage.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# class SearchlistView(APIView):
+#     def get(self, request):
+#         search = request.GET.get("search", "")
+#         if search:
+#             customers = Customer.objects.filter(Q(name__icontains=search) | Q(surname__icontains=search))
+#             serializer = CustomerSerializer(customers, many=True)
+#             return Response(serializer.data)
+#         else:
+#             return Response({"message": "No search term provided."}, status=status.HTTP_400_BAD_REQUEST)  
 
 # class OrderPagination(PageNumberPagination):
 #     page_size = 10  # Sayfa başına 50 sipariş
@@ -361,3 +472,122 @@ class PaymenInvoiceDetailView(APIView):
         # serialized = OrderSerializer(page, many=True)
 
         # return paginator.get_paginated_response(serialized.data)
+
+
+class PaymentPagination(PageNumberPagination):
+    page_size = 10
+
+class PaymentEntryView(APIView):
+    def get(self, request):
+        entry_type = request.query_params.get('type', '')
+        order_by = request.query_params.get('order_by', 'payment_time')
+        order = request.query_params.get('order', 'desc')
+
+        payments = PaymenInvoice.objects.all()
+
+        if entry_type:
+            payments = payments.filter(type=entry_type)
+
+        if order == 'desc':
+            payments = payments.order_by(f'-{order_by}')
+        else:
+            payments = payments.order_by(order_by)
+
+        paginator = PaymentPagination()
+        result_page = paginator.paginate_queryset(payments, request)
+        serializer = PaymenInvoiceReadSerializer(result_page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+    def post(self, request):
+        serializer = PaymenInvoiceSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(created_by=request.user)
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+class PaymentEntryDetailView(APIView):
+    def get(self, request, pk):
+        payment_entry = get_object_or_404(PaymenInvoice, pk=pk)
+        serializer = PaymenInvoiceReadSerializer(payment_entry)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        payment_entry = get_object_or_404(PaymenInvoice, pk=pk)
+        serializer = PaymenInvoiceSerializer(payment_entry, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            read_serializer = PaymenInvoiceReadSerializer(payment_entry)
+            return Response(read_serializer.data)
+        return Response(read_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        payment_entry = get_object_or_404(PaymenInvoice, pk=pk)
+        payment_entry.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class InvoicePagination(PageNumberPagination):
+    page_size = 10
+
+class InvoiceView(APIView):
+    def get(self, request):
+         # Parametreleri al
+        entry_type = request.query_params.get('type', 'invoice')  # Varsayılan: 'invoice'
+        order_by = request.query_params.get('order_by', 'date')  # Varsayılan: 'date'
+        order = request.query_params.get('order', 'desc')  # Varsayılan: 'desc'
+
+        # Sorguyu başlat
+        invoices = PaymenInvoice.objects.all()
+
+        # Tür filtresi uygula
+        if entry_type:
+            invoices = invoices.filter(type=entry_type)
+
+        # Sıralama uygula
+        if order == 'desc':
+            invoices = invoices.order_by(f'-{order_by}')
+        else:
+            invoices = invoices.order_by(order_by)
+
+        # Sayfalama işlemi
+        paginator = PaymentPagination()
+        result_page = paginator.paginate_queryset(invoices, request)
+        serializer = PaymenInvoiceReadSerializer(result_page, many=True)
+
+        # Sayfalanmış yanıtı döndür
+        return paginator.get_paginated_response(serializer.data)
+
+    def post(self, request):
+        serializer = PaymenInvoiceSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(created_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+class InvoiceDetailView(APIView):
+    def get(self, request, pk):
+        invoice = get_object_or_404(PaymenInvoice, pk=pk)
+        serializer = PaymenInvoiceReadSerializer(invoice)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        invoice = get_object_or_404(PaymenInvoice, pk=pk)
+        serializer = PaymenInvoiceSerializer(invoice, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            read_serializer = PaymenInvoiceReadSerializer(invoice)
+            return Response(read_serializer.data)
+        return Response(read_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        invoice = get_object_or_404(PaymenInvoice, pk=pk)
+        invoice.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+

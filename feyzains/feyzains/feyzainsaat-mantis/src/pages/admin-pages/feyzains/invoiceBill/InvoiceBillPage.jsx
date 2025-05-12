@@ -28,9 +28,17 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // PDF ikonu ekle
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
+import { CompanyContext } from '../../../../contexts/admin/feyzains/CompanyContext';
+import { WorksiteContext } from '../../../../contexts/admin/feyzains/WorksiteContext';
+import { GroupContext } from '../../../../contexts/admin/feyzains/GroupContext';
+import { CustomerContext } from '../../../../contexts/admin/feyzains/CustomerContext';
 import axios from 'axios';
 import { PUBLIC_URL } from '../../../../services/network_service';
+import jsPDF from 'jspdf'; // jsPDF kütüphanesini import et
+import 'jspdf-autotable'; // jsPDF-AutoTable eklentisini import et
+import robotoBase64 from '../fonts/roboto-base64';
 import CreateInvoiceBill from './CreateInvoiceBill';
 import EditInvoiceBill from './EditInvoiceBill';
 import ViewInvoiceBill from './ViewInvoiceBill';
@@ -67,15 +75,18 @@ function getComparator(order, orderBy) {
 
 const InvoiceBillPage = () => {
   // Context
-  const { paymentEntryInvoices, loading, error, fetchPaymentEntryInvoices, deletePaymentEntryInvoice } =
-    useContext(PaymentEntryInvoiceContext);
+  const { invoices, count, loading, error, fetchInvoice, deleteInvoice } = useContext(PaymentEntryInvoiceContext);
   const { fetchUser } = useContext(AuthContext);
+  const { fetchCompanies, companies } = useContext(CompanyContext);
+  const { fetchWorksites, worksites } = useContext(WorksiteContext);
+  const { fetchGroups, groups } = useContext(GroupContext);
+  const { fetchCustomers, customers } = useContext(CustomerContext);
 
   // States
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isEditInvoiceDialogOpen, setIsEditInvoiceDialogOpen] = useState(false);
   const [isCreateInvoiceDialogOpen, setIsCreateInvoiceDialogOpen] = useState(false);
   const [isViewInvoiceDialogOpen, setIsViewInvoiceDialogOpen] = useState(false);
@@ -89,8 +100,6 @@ const InvoiceBillPage = () => {
 
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
   useEffect(() => {
-    fetchPaymentEntryInvoices();
-
     // Kullanıcı bilgilerini al
     const initializeUser = async () => {
       try {
@@ -106,14 +115,25 @@ const InvoiceBillPage = () => {
     };
 
     initializeUser();
-  }, [fetchPaymentEntryInvoices]); // fetchPayments'i bağımlılık olarak ekleyin
+  }, []); // fetchPayments'i bağımlılık olarak ekleyin
 
-  // Fatura sayısını güncelleme
   useEffect(() => {
-    if (paymentEntryInvoices) {
-      setInvoiceCount(paymentEntryInvoices.length);
-    }
-  }, [paymentEntryInvoices]);
+    fetchInvoice({
+      type: 'invoice',
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order
+    });
+  }, [page, rowsPerPage, orderBy, order]);
+  // Fatura sayısını güncelleme
+
+  useEffect(() => {
+    fetchCompanies();
+    fetchWorksites();
+    fetchGroups();
+    fetchCustomers();
+  }, []);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -122,6 +142,7 @@ const InvoiceBillPage = () => {
   };
 
   const handleChangePage = (event, newPage) => {
+    console.log('newPage', newPage);
     setPage(newPage);
   };
 
@@ -130,35 +151,74 @@ const InvoiceBillPage = () => {
     setPage(0);
   };
 
+  const handleEditInvoiceClick = (id) => {
+    setSelectedInvoiceId(id);
+    setIsEditInvoiceDialogOpen(true);
+  };
+
   const handleViewInvoiceClick = (id) => {
     setSelectedInvoiceId(id);
     setIsViewInvoiceDialogOpen(true);
+  };
+
+  const handleEditInvoice = () => {
+    setIsEditInvoiceDialogOpen(false);
+    setSelectedInvoiceId(null);
+
+    fetchInvoice({
+      type: 'invoice',
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order
+    });
+  };
+
+  const handleCreateInvoice = (invoiceId) => {
+    setIsCreateInvoiceDialogOpen(false);
+    setSelectedInvoiceId(invoiceId);
+    fetchInvoice({
+      type: 'invoice',
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order
+    });
+  };
+
+  const handleCreateDialogClose = () => {
+    setIsCreateInvoiceDialogOpen(false);
+    setSelectedInvoiceId(null);
+    // Trigger a refresh only when needed
   };
 
   const handleCloseViewDialog = () => {
     setIsViewInvoiceDialogOpen(false);
     setSelectedInvoiceId(null);
   };
-
-  const handleEditInvoiceClick = (id) => {
-    setSelectedInvoiceId(id);
-    setIsEditInvoiceDialogOpen(true);
-  };
-
-  const handleEditInvoice = () => {
+  const handleCloseEditDialog = () => {
     setIsEditInvoiceDialogOpen(false);
     setSelectedInvoiceId(null);
-    // Trigger a refresh only when needed
-    setRefreshTrigger((prev) => prev + 1);
   };
+
+  // const handleEditInvoice = () => {
+  //   setIsEditInvoiceDialogOpen(false);
+  //   setSelectedInvoiceId(null);
+  // };
 
   const handleDeleteInvoice = async (id) => {
     if (window.confirm('Bu fatura kaydını silmek istediğinizden emin misiniz?')) {
       try {
-        const response = await deletePaymentEntryInvoice(id);
+        const response = await deleteInvoice(id);
         if (response && response.success) {
           toast.success('Fatura kaydı başarıyla silindi');
-          // We don't need to fetch again as deletePayment updates the local state
+          fetchInvoice({
+            type: 'invoice',
+            page: page,
+            pageSize: rowsPerPage,
+            orderBy: orderBy,
+            order: order
+          });
         } else {
           toast.error(response?.error || 'Fatura kaydı silinemedi');
         }
@@ -174,22 +234,7 @@ const InvoiceBillPage = () => {
     setSelectedFile(event.target.files[0]);
   };
 
-  const handleCreateDialogClose = () => {
-    setIsCreateInvoiceDialogOpen(false);
-    // Trigger a refresh only when needed
-    setRefreshTrigger((prev) => prev + 1);
-  };
-
-  const refreshData = useCallback(() => {
-    fetchPaymentEntryInvoices(true); // Force refresh
-  }, [fetchPaymentEntryInvoices]);
-
   // Use the refresh trigger to control when to refresh data
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      refreshData();
-    }
-  }, [refreshTrigger, refreshData]);
 
   const importFromExcel = async () => {
     if (!selectedFile) {
@@ -230,12 +275,12 @@ const InvoiceBillPage = () => {
 
   const exportToExcel = async () => {
     try {
-      if (!paymentEntryInvoices || paymentEntryInvoices.length === 0) {
+      if (!invoices || invoices.length === 0) {
         toast.warning('Excel için fatura verisi bulunamadı!');
         return;
       }
 
-      const data = paymentEntryInvoices.map((paymentEntryInvoice) => ({
+      const data = invoices.map((paymentEntryInvoice) => ({
         Tarih: formatDate(paymentEntryInvoice.date),
         Şantiye: paymentEntryInvoice.worksite?.name || '-',
         Grup: paymentEntryInvoice.group?.name || '-',
@@ -284,7 +329,7 @@ const InvoiceBillPage = () => {
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Ödemeler');
 
       // Export işlemi
-      XLSX.writeFile(workbook, 'Odeme_Listesi.xlsx');
+      XLSX.writeFile(workbook, 'Fatura_Kayıtları.xlsx');
       toast.success('Excel başarıyla oluşturuldu!');
     } catch (error) {
       toast.error('Excel oluşturulurken hata oluştu.');
@@ -292,47 +337,172 @@ const InvoiceBillPage = () => {
     }
   };
 
-  const filteredInvoices = useMemo(() => {
-    if (!paymentEntryInvoices) return [];
+  // PDF'e aktarma fonksiyonu
+  const exportToPdf = () => {
+    try {
+      if (!invoices || invoices.length === 0) {
+        toast.warning('PDF için fatura verisi bulunamadı!');
+        return;
+      }
 
-    const searchLower = (searchQuery2 || '').toLowerCase();
+      // PDF oluştur
+      const doc = new jsPDF('l', 'mm', 'a4');
 
-    return paymentEntryInvoices.filter((paymentEntryInvoice) => {
-      const worksiteName = paymentEntryInvoice?.worksite?.name?.toLowerCase() || '';
-      const groupName = paymentEntryInvoice?.group?.name?.toLowerCase() || '';
-      const companyName = paymentEntryInvoice?.company?.name?.toLowerCase() || '';
-      const customerName = paymentEntryInvoice?.customer?.name?.toLowerCase() || '';
-      const material = (paymentEntryInvoice?.material || '').toLowerCase();
-      const quantity = paymentEntryInvoice?.quantity?.toString() || '';
-      const unitPrice = paymentEntryInvoice?.unit_price?.toString() || '';
-      const price = paymentEntryInvoice?.price?.toString() || '';
-      const tax = paymentEntryInvoice?.tax?.toString() || '';
-      const withholding = paymentEntryInvoice?.withholding?.toString() || '';
-      const receivable = paymentEntryInvoice?.receivable?.toString() || '';
-      const createdBy = paymentEntryInvoice?.created_by?.username?.toLowerCase() || '';
-      const date = paymentEntryInvoice?.date || '';
+      // Roboto fontunu ekleyelim - Türkçe karakterleri destekler
+      doc.addFileToVFS('Roboto-Regular.ttf', robotoBase64);
+      doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+      doc.setFont('Roboto');
 
-      return (
-        worksiteName.includes(searchLower) ||
-        groupName.includes(searchLower) ||
-        companyName.includes(searchLower) ||
-        customerName.includes(searchLower) ||
-        material.includes(searchLower) ||
-        quantity.includes(searchLower) ||
-        unitPrice.includes(searchLower) ||
-        price.includes(searchLower) ||
-        tax.includes(searchLower) ||
-        withholding.includes(searchLower) ||
-        receivable.includes(searchLower) ||
-        createdBy.includes(searchLower) ||
-        date.includes(searchLower)
-      );
-    });
-  }, [paymentEntryInvoices, searchQuery2]);
+      // PDF başlığı
+      doc.setFontSize(16);
+      doc.text('Fatura Kayıtları', 14, 15);
+
+      // Tarih
+      doc.setFontSize(10);
+      const today = new Date().toLocaleDateString('tr-TR');
+      doc.text(`Oluşturma Tarihi: ${today}`, 14, 22);
+
+      // Tablo konfigürasyonu - Türkçe karakterli başlıklar
+      const headers = [
+        'Tarih',
+        'Şantiye',
+        'Grup',
+        'Şirket',
+        'Müşteri',
+        'Malzeme',
+        'Adet',
+        'Birim Fiyatı',
+        'Tutar',
+        'KDV',
+        'Tevkifat',
+        'Alacak'
+      ];
+      const columnWidths = [30, 30, 30, 30, 30, 30, 20, 25, 25, 20, 20, 25]; // Kolon genişlikleri
+      const totalTableWidth = columnWidths.reduce((a, b) => a + b, 0);
+      const marginX = (doc.internal.pageSize.getWidth() - totalTableWidth) / 2;
+
+      // Veri hazırlama
+      const filteredData = invoices.map((paymentEntryInvoice) => [
+        formatDate(paymentEntryInvoice.date),
+        paymentEntryInvoice.worksite?.name || '-',
+        paymentEntryInvoice.group?.name || '-',
+        paymentEntryInvoice.company?.name || '-',
+        paymentEntryInvoice.customer?.name || '-',
+        paymentEntryInvoice.material || '-',
+        paymentEntryInvoice.quantity || '-',
+        formatNumber(paymentEntryInvoice.unit_price),
+        formatNumber(paymentEntryInvoice.price),
+        paymentEntryInvoice.tax || '-',
+        paymentEntryInvoice.withholding || '-',
+        formatNumber(paymentEntryInvoice.receivable) || '-'
+      ]);
+
+      let currentY = 30;
+      const cellHeight = 10;
+
+      // ÖNEMLİ: Font kodlamasını UTF-8 olarak ayarla
+      doc.setFont('Roboto', 'normal');
+      doc.setFontSize(8);
+
+      // Başlıklar
+      doc.setFillColor(66, 66, 66);
+      doc.setTextColor(255, 255, 255);
+
+      // İki adımda çizim yaklaşımı
+      // 1. Adım: Kutuları çiz
+      let currentX = marginX;
+      headers.forEach((header, i) => {
+        doc.rect(currentX, currentY, columnWidths[i], cellHeight, 'F');
+        currentX += columnWidths[i];
+      });
+
+      // 2. Adım: Metinleri yaz - autoEncode özelliğini true yapıyoruz
+      currentX = marginX;
+      headers.forEach((header, i) => {
+        // PDF-lib için metin kodlaması ve konumlandırma ayarları
+        doc.text(header, currentX + 4, currentY + 7, {
+          charSpace: 0,
+          lineHeightFactor: 1,
+          maxWidth: columnWidths[i] - 8,
+          align: 'left'
+        });
+        currentX += columnWidths[i];
+      });
+
+      // Satır verisi
+      currentY += cellHeight;
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+
+      filteredData.forEach((row) => {
+        // Yeni sayfa kontrolü
+        if (currentY + cellHeight > doc.internal.pageSize.getHeight() - 10) {
+          doc.addPage();
+          currentY = 20;
+
+          // Yeni sayfadaki başlıklar
+          currentX = marginX;
+
+          // Kutuları çiz
+          doc.setFillColor(66, 66, 66);
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(10);
+          headers.forEach((header, i) => {
+            doc.rect(currentX, currentY, columnWidths[i], cellHeight, 'F');
+            currentX += columnWidths[i];
+          });
+
+          // Metinleri yaz
+          currentX = marginX;
+          headers.forEach((header, i) => {
+            doc.text(header, currentX + 4, currentY + 7, {
+              charSpace: 0,
+              lineHeightFactor: 1,
+              maxWidth: columnWidths[i] - 8,
+              align: 'left'
+            });
+            currentX += columnWidths[i];
+          });
+
+          currentY += cellHeight;
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(9);
+        }
+
+        // Hücre kutuları
+        currentX = marginX;
+        row.forEach((cell, i) => {
+          doc.rect(currentX, currentY, columnWidths[i], cellHeight);
+          currentX += columnWidths[i];
+        });
+
+        // Hücre metinleri
+        currentX = marginX;
+        row.forEach((cell, i) => {
+          doc.text(cell.toString(), currentX + 4, currentY + 7, {
+            charSpace: 0,
+            lineHeightFactor: 1,
+            maxWidth: columnWidths[i] - 8,
+            align: 'left'
+          });
+          currentX += columnWidths[i];
+        });
+
+        currentY += cellHeight;
+      });
+
+      // PDF'i kaydet
+      doc.save('Fatura_Kayıtları.pdf');
+      toast.success('PDF başarıyla oluşturuldu!');
+    } catch (error) {
+      toast.error('PDF oluşturulurken hata oluştu.');
+      console.error('PDF export hatası:', error);
+    }
+  };
 
   const visibleInvoiceRows = useMemo(() => {
-    return filteredInvoices.sort(getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [filteredInvoices, order, orderBy, page, rowsPerPage]);
+    return invoices.sort(getComparator(order, orderBy));
+  }, [invoices, order, orderBy]);
 
   // IMPORTANT: Using memoized props to pass to child components
   const viewInvoiceProps = useMemo(
@@ -347,7 +517,7 @@ const InvoiceBillPage = () => {
   const editInvoiceProps = useMemo(
     () => ({
       open: isEditInvoiceDialogOpen,
-      onClose: handleEditInvoice,
+      onClose: handleCloseEditDialog,
       invoiceId: selectedInvoiceId
     }),
     [isEditInvoiceDialogOpen, selectedInvoiceId]
@@ -382,6 +552,9 @@ const InvoiceBillPage = () => {
               )
             }}
           />
+          <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
+            PDF'e Aktar
+          </Button>
           <Button variant="outlined" color="secondary" size="small" onClick={exportToExcel} sx={{ ml: 2 }}>
             Excel'e Aktar
           </Button>
@@ -456,46 +629,44 @@ const InvoiceBillPage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {visibleInvoiceRows.filter((row) => row.type === 'invoice').length > 0 ? (
-                  visibleInvoiceRows
-                    .filter((row) => row.type === 'invoice')
-                    .map((paymentEntryInvoices) => (
-                      <TableRow key={paymentEntryInvoices.id}>
-                        <TableCell>{formatDate(paymentEntryInvoices.date)}</TableCell>
-                        <TableCell>{paymentEntryInvoices.worksite?.name || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.group?.name || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.company?.name || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.customer?.name || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.material || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.quantity || '-'}</TableCell>
-                        <TableCell>{formatNumber(paymentEntryInvoices.unit_price)}</TableCell>
-                        <TableCell>{formatNumber(paymentEntryInvoices.price)}</TableCell>
-                        <TableCell>{paymentEntryInvoices.tax || '-'}</TableCell>
-                        <TableCell>{paymentEntryInvoices.withholding || '-'}</TableCell>
-                        <TableCell>{formatNumber(paymentEntryInvoices.receivable) || '-'}</TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Detay">
-                            <IconButton onClick={() => handleViewInvoiceClick(paymentEntryInvoices.id)}>
-                              <VisibilityIcon />
-                            </IconButton>
-                          </Tooltip>
-                          {isAdmin && (
-                            <>
-                              <Tooltip title="Düzenle">
-                                <IconButton onClick={() => handleEditInvoiceClick(paymentEntryInvoices.id)}>
-                                  <EditIcon />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Sil">
-                                <IconButton onClick={() => handleDeleteInvoice(paymentEntryInvoices.id)}>
-                                  <DeleteIcon />
-                                </IconButton>
-                              </Tooltip>
-                            </>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                {visibleInvoiceRows.length > 0 ? (
+                  visibleInvoiceRows.map((invoices) => (
+                    <TableRow key={invoices.id}>
+                      <TableCell>{formatDate(invoices.date)}</TableCell>
+                      <TableCell>{invoices.worksite?.name || '-'}</TableCell>
+                      <TableCell>{invoices.group?.name || '-'}</TableCell>
+                      <TableCell>{invoices.company?.name || '-'}</TableCell>
+                      <TableCell>{invoices.customer?.name || '-'}</TableCell>
+                      <TableCell>{invoices.material || '-'}</TableCell>
+                      <TableCell>{invoices.quantity || '-'}</TableCell>
+                      <TableCell>{formatNumber(invoices.unit_price)}</TableCell>
+                      <TableCell>{formatNumber(invoices.price)}</TableCell>
+                      <TableCell>{invoices.tax || '-'}</TableCell>
+                      <TableCell>{invoices.withholding || '-'}</TableCell>
+                      <TableCell>{formatNumber(invoices.receivable) || '-'}</TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Detay">
+                          <IconButton onClick={() => handleViewInvoiceClick(invoices.id)}>
+                            <VisibilityIcon />
+                          </IconButton>
+                        </Tooltip>
+                        {isAdmin && (
+                          <>
+                            <Tooltip title="Düzenle">
+                              <IconButton onClick={() => handleEditInvoiceClick(invoices.id)}>
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Sil">
+                              <IconButton onClick={() => handleDeleteInvoice(invoices.id)}>
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
                 ) : (
                   <TableRow>
                     <TableCell colSpan={13} align="center">
@@ -511,7 +682,7 @@ const InvoiceBillPage = () => {
           <TablePagination
             rowsPerPageOptions={[10, 25, 50]}
             component="div"
-            count={filteredInvoices.length}
+            count={count}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}

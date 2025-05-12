@@ -24,7 +24,7 @@ import { sendApiRequest } from '../../../../services/network_service';
 import { set } from 'lodash';
 
 const EditInvoiceEntry = ({ open, onClose, invoiceId }) => {
-  const { updatePaymentEntryInvoice, getPaymentEntryInvoiceById, loading } = useContext(PaymentEntryInvoiceContext);
+  const { updateInvoice, getInvoiceById, loading } = useContext(PaymentEntryInvoiceContext);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -74,7 +74,7 @@ const EditInvoiceEntry = ({ open, onClose, invoiceId }) => {
 
   const loadPaymentDetails = async () => {
     try {
-      const result = await getPaymentEntryInvoiceById(invoiceId);
+      const result = await getInvoiceById(invoiceId);
       if (result.success) {
         const bill = result.data;
         setDate(new Date(bill.date));
@@ -203,7 +203,7 @@ const EditInvoiceEntry = ({ open, onClose, invoiceId }) => {
         receivable: parseFloat(receivable)
       };
 
-      const result = await updatePaymentEntryInvoice(invoiceId, invoiceData);
+      const result = await updateInvoice(invoiceId, invoiceData);
 
       if (result.success) {
         toast.success('Fatura kaydı başarıyla güncellendi');
