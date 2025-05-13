@@ -92,7 +92,11 @@ const InvoiceBillPage = () => {
   const [isViewInvoiceDialogOpen, setIsViewInvoiceDialogOpen] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [searchQuery1, setSearchQuery1] = useState('');
   const [searchQuery2, setSearchQuery2] = useState('');
+  const [searchQuery3, setSearchQuery3] = useState('');
+  const [searchQuery4, setSearchQuery4] = useState('');
+
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [invoiceCount, setInvoiceCount] = useState(0);
@@ -234,6 +238,19 @@ const InvoiceBillPage = () => {
     setSelectedFile(event.target.files[0]);
   };
 
+  const handleFilter = () => {
+    fetchInvoice({
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order,
+      worksite: searchQuery1,
+      group: searchQuery2,
+      company: searchQuery3,
+      customer: searchQuery4
+    });
+  };
+
   // Use the refresh trigger to control when to refresh data
 
   const importFromExcel = async () => {
@@ -346,7 +363,7 @@ const InvoiceBillPage = () => {
       }
 
       // PDF oluştur
-      const doc = new jsPDF('l', 'mm', 'a4');
+      const doc = new jsPDF('l', 'mm', 'a3');
 
       // Roboto fontunu ekleyelim - Türkçe karakterleri destekler
       doc.addFileToVFS('Roboto-Regular.ttf', robotoBase64);
@@ -377,7 +394,7 @@ const InvoiceBillPage = () => {
         'Tevkifat',
         'Alacak'
       ];
-      const columnWidths = [30, 30, 30, 30, 30, 30, 20, 25, 25, 20, 20, 25]; // Kolon genişlikleri
+      const columnWidths = [30, 50, 50, 50, 50, 30, 20, 25, 25, 20, 20, 25]; // Kolon genişlikleri
       const totalTableWidth = columnWidths.reduce((a, b) => a + b, 0);
       const marginX = (doc.internal.pageSize.getWidth() - totalTableWidth) / 2;
 
@@ -533,25 +550,129 @@ const InvoiceBillPage = () => {
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h5" component="h1">
-          Fatura Kayıtları
+      <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mb: 4 }}>
+        <Typography
+          variant="h5"
+          component="h1"
+          sx={{
+            fontWeight: 'bold',
+            color: 'primary.main',
+            letterSpacing: 0.5,
+            mb: 3
+          }}
+        >
+          FATURA FİLTRELEME
         </Typography>
+
+        <Box display="flex" justifyContent="space-between" flexWrap="wrap" gap={2}>
+          {/* Sol taraf: Filtre alanları */}
+          <Box display="flex" flexWrap="wrap" gap={8}>
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Şantiye</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Şantiye Ara..."
+                value={searchQuery1}
+                onChange={(e) => setSearchQuery1(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Grup</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Grup Ara..."
+                value={searchQuery2}
+                onChange={(e) => setSearchQuery2(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Şirket</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Şirket Ara..."
+                value={searchQuery3}
+                onChange={(e) => setSearchQuery3(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Müşteri</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Müşteri Ara..."
+                value={searchQuery4}
+                onChange={(e) => setSearchQuery4(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+          </Box>
+
+          {/* Sağ taraf: Filtrele butonu */}
+          <Box display="flex" alignItems="flex-end">
+            <Button
+              variant="contained"
+              size="medium"
+              onClick={handleFilter}
+              sx={{
+                backgroundColor: '#f5a623', // özel bir turuncu tonu
+                color: '#fff',
+                '&:hover': {
+                  backgroundColor: '#d48806'
+                },
+                fontWeight: 'bold',
+                px: 3,
+                borderRadius: 2
+              }}
+            >
+              Filtrele
+            </Button>
+          </Box>
+        </Box>
+      </Paper>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Box display="flex" alignItems="center">
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Fatura Ara..."
-            value={searchQuery2}
-            onChange={(e) => setSearchQuery2(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              )
-            }}
-          />
+          <Typography variant="h5" component="h1">
+            Fatura Kayıtları
+          </Typography>
+        </Box>
+        <Box display="flex" alignItems="center">
           <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
             PDF'e Aktar
           </Button>

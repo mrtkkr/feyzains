@@ -32,71 +32,107 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
     if (!date) return '';
     return new Date(date).toISOString().split('T')[0]; // '2026-05-10' gibi
   };
-  const fetchInvoice = useCallback(async ({ type = 'invoice', page = 0, pageSize = 10, orderBy = 'invoice_time', order = 'desc' } = {}) => {
-    setLoading(true);
-    setError(null);
+  const fetchInvoice = useCallback(
+    async ({
+      type = 'invoice',
+      page = 0,
+      pageSize = 10,
+      orderBy = 'invoice_time',
+      order = 'desc',
+      worksite = '',
+      group = '',
+      company = '',
+      customer = ''
+    } = {}) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const queryParams = {
-        page: page + 1, // Django'da sayfalar 1-indexli
-        page_size: pageSize,
-        order_by: orderBy,
-        order: order
-      };
+      try {
+        const queryParams = {
+          page: page + 1, // Django'da sayfalar 1-indexli
+          page_size: pageSize,
+          order_by: orderBy,
+          order: order
+        };
+        if (worksite) queryParams.worksite = worksite;
+        if (group) queryParams.group = group;
+        if (company) queryParams.company = company;
+        if (customer) queryParams.customer = customer;
 
-      const res = await sendApiRequest({
-        url: baseUrl + invoiceListUrl,
-        method: 'GET',
-        queryParams
-      });
+        const res = await sendApiRequest({
+          url: baseUrl + invoiceListUrl,
+          method: 'GET',
+          queryParams
+        });
 
-      if (res.response.status === 200) {
-        setInvoices(res.data.results || []);
-        setCount(res.data.count || 0); // toplam kayıt sayısı
-        setPaymentEntryInvoices(res.data || []);
-      } else {
-        setError('Faturalar alınırken bir hata oluştu.');
+        if (res.response.status === 200) {
+          setInvoices(res.data.results || []);
+          setCount(res.data.count || 0); // toplam kayıt sayısı
+          setPaymentEntryInvoices(res.data || []);
+        } else {
+          setError('Faturalar alınırken bir hata oluştu.');
+        }
+      } catch (error) {
+        console.error('fetchInvoice error:', error);
+        setError('API çağrısı başarısız oldu.');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('fetchInvoice error:', error);
-      setError('API çağrısı başarısız oldu.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
-  const fetchPaymentEntry = useCallback(async ({ type = 'payment', page = 0, pageSize = 10, orderBy = 'payment_time', order = 'desc' }) => {
-    // Skip fetching if data is already loaded and forceRefresh is false
-    setLoading(true);
-    setError(null);
-    try {
-      const queryParams = {
-        type: type, // Add the type parameter to the request
-        page: page + 1, // Django'da sayfalar 1-indexli
-        pageSize: pageSize,
-        order_by: orderBy,
-        order: order
-      };
-      const res = await sendApiRequest({
-        url: baseUrl + paymentEntryListUrl,
-        method: 'GET',
-        queryParams
-      });
+  const fetchPaymentEntry = useCallback(
+    async ({
+      type = 'payment',
+      page = 0,
+      pageSize = 10,
+      orderBy = 'payment_time',
+      order = 'desc',
+      worksite = '',
+      group = '',
+      company = '',
+      customer = ''
+    }) => {
+      // Skip fetching if data is already loaded and forceRefresh is false
+      setLoading(true);
+      setError(null);
+      try {
+        const queryParams = {
+          type: type, // Add the type parameter to the request
+          page: page + 1, // Django'da sayfalar 1-indexli
+          pageSize: pageSize,
+          order_by: orderBy,
+          order: order
+        };
 
-      if (res.response.status === 200) {
-        setPayments(res.data.results || []);
-        setCount(res.data.count || 0); // toplam kayıt sayısı
-        setPaymentEntryInvoices(res.data || []);
-      } else {
-        setError('Ödeme Girişi veya Faturalar alınırken bir hata oluştu.');
+        if (worksite) queryParams.worksite = worksite;
+        if (group) queryParams.group = group;
+        if (company) queryParams.company = company;
+        if (customer) queryParams.customer = customer;
+
+        const res = await sendApiRequest({
+          url: baseUrl + paymentEntryListUrl,
+          method: 'GET',
+          queryParams
+        });
+
+        if (res.response.status === 200) {
+          setPayments(res.data.results || []);
+          setCount(res.data.count || 0); // toplam kayıt sayısı
+          setPaymentEntryInvoices(res.data || []);
+        } else {
+          setError('Ödeme Girişi veya Faturalar alınırken bir hata oluştu.');
+        }
+      } catch (error) {
+        console.error('fetchPaymentEntryInvoices error:', error);
+        setError('API çağrısı başarısız oldu.');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('fetchPaymentEntryInvoices error:', error);
-      setError('API çağrısı başarısız oldu.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   const fetchChecklists = useCallback(
     async ({

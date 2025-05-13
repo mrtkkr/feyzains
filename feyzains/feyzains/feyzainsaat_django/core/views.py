@@ -478,34 +478,45 @@ class PaymentPagination(PageNumberPagination):
     page_size = 10
 
 class PaymentEntryView(APIView):
-    def get(self, request):
-        entry_type = request.query_params.get('type', '')
-        order_by = request.query_params.get('order_by', 'payment_time')
-        order = request.query_params.get('order', 'desc')
+    def get(self, request): 
+        # Parametreleri al
+        entry_type = request.query_params.get('type', 'invoice')  # Varsayılan: 'invoice'
+        order_by = request.query_params.get('order_by', 'date')  # payment_time yerine 'date'
+        order = request.query_params.get('order', 'desc')  # Varsayılan: 'desc'
+        worksite = request.query_params.get('worksite', '')
+        group = request.query_params.get('group', '')
+        company = request.query_params.get('company', '')
+        customer = request.query_params.get('customer', '')
 
-        payments = PaymenInvoice.objects.all()
+        # Sorgu filtresini hazırla
+        filters = Q()
 
         if entry_type:
-            payments = payments.filter(type=entry_type)
+            filters &= Q(type=entry_type)
+        if company:
+            filters &= Q(company__name__icontains=company)
+        if worksite:
+            filters &= Q(worksite__name__icontains=worksite)
+        if group:
+            filters &= Q(group__name__icontains=group)
+        if customer:
+            filters &= Q(customer__name__icontains=customer)
 
+        # Filtreyi uygula
+        payments = PaymenInvoice.objects.filter(filters)
+
+        # Sıralama uygula
         if order == 'desc':
             payments = payments.order_by(f'-{order_by}')
         else:
             payments = payments.order_by(order_by)
 
+        # Sayfalama ve serializer
         paginator = PaymentPagination()
         result_page = paginator.paginate_queryset(payments, request)
         serializer = PaymenInvoiceReadSerializer(result_page, many=True)
 
         return paginator.get_paginated_response(serializer.data)
-
-    def post(self, request):
-        serializer = PaymenInvoiceSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(created_by=request.user)
-            
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
 
@@ -535,17 +546,34 @@ class InvoicePagination(PageNumberPagination):
 
 class InvoiceView(APIView):
     def get(self, request):
-         # Parametreleri al
+        # Parametreleri al
         entry_type = request.query_params.get('type', 'invoice')  # Varsayılan: 'invoice'
         order_by = request.query_params.get('order_by', 'date')  # Varsayılan: 'date'
         order = request.query_params.get('order', 'desc')  # Varsayılan: 'desc'
+        worksite = request.query_params.get('worksite', '')
+        group = request.query_params.get('group', '')
+        company = request.query_params.get('company', '')
+        customer = request.query_params.get('customer', '')
 
         # Sorguyu başlat
-        invoices = PaymenInvoice.objects.all()
+        filters = Q()
 
-        # Tür filtresi uygula
+        # Tür filtresi
         if entry_type:
-            invoices = invoices.filter(type=entry_type)
+            filters &= Q(type=entry_type)
+
+        # Diğer filtreler (case-insensitive)
+        if company:
+            filters &= Q(company__name__icontains=company)
+        if worksite:
+            filters &= Q(worksite__name__icontains=worksite)
+        if group:
+            filters &= Q(group__name__icontains=group)
+        if customer:
+            filters &= Q(customer__name__icontains=customer)
+
+        # Filtreleri uygula
+        invoices = PaymenInvoice.objects.filter(filters)
 
         # Sıralama uygula
         if order == 'desc':
@@ -558,7 +586,6 @@ class InvoiceView(APIView):
         result_page = paginator.paginate_queryset(invoices, request)
         serializer = PaymenInvoiceReadSerializer(result_page, many=True)
 
-        # Sayfalanmış yanıtı döndür
         return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):

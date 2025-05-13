@@ -88,6 +88,25 @@ const PanelPage = () => {
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
+  // Şantiye
+  const [worksitePage, setWorksitePage] = useState(0);
+  const [worksiteRowsPerPage, setWorksiteRowsPerPage] = useState(3);
+
+  // Grup
+  const [groupPage, setGroupPage] = useState(0);
+  const [groupRowsPerPage, setGroupRowsPerPage] = useState(3);
+
+  // Şirketler için
+  const [companyPage, setCompanyPage] = useState(0);
+  const [companyRowsPerPage, setCompanyRowsPerPage] = useState(3);
+
+  // Müşteriler için
+  const [customerPage, setCustomerPage] = useState(0);
+  const [customerRowsPerPage, setCustomerRowsPerPage] = useState(3);
+
+  const [personalPage, setPersonalPage] = useState(0);
+  const [personalRowsPerPage, setPersonalRowsPerPage] = useState(3);
+
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [isEditWorksiteDialogOpen, setIsEditWorksiteDialogOpen] = useState(false);
@@ -174,6 +193,56 @@ const PanelPage = () => {
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
+  };
+
+  // Şantiye için
+  const handleWorksiteChangePage = (event, newPage) => {
+    setWorksitePage(newPage);
+  };
+
+  const handleWorksiteChangeRowsPerPage = (event) => {
+    setWorksiteRowsPerPage(parseInt(event.target.value, 10));
+    setWorksitePage(0);
+  };
+
+  // Grup için
+  const handleGroupChangePage = (event, newPage) => {
+    setGroupPage(newPage);
+  };
+
+  const handleGroupChangeRowsPerPage = (event) => {
+    setGroupRowsPerPage(parseInt(event.target.value, 10));
+    setGroupPage(0);
+  };
+
+  // Şirket için
+  const handleCompanyChangePage = (event, newPage) => {
+    setCompanyPage(newPage);
+  };
+
+  const handleCompanyChangeRowsPerPage = (event) => {
+    setCompanyRowsPerPage(parseInt(event.target.value, 10));
+    setCompanyPage(0);
+  };
+
+  // Müşteri için
+  const handleCustomerChangePage = (event, newPage) => {
+    setCustomerPage(newPage);
+  };
+
+  const handleCustomerChangeRowsPerPage = (event) => {
+    setCustomerRowsPerPage(parseInt(event.target.value, 10));
+    setCustomerPage(0);
+  };
+
+  // Personel için
+  const handlePersonalChangePage = (event, newPage) => {
+    setPersonalPage(newPage);
+  };
+
+  const handlePersonalChangeRowsPerPage = (event) => {
+    setPersonalRowsPerPage(parseInt(event.target.value, 10));
+    setPersonalPage(0);
   };
 
   const handleCreateDialogClose = () => {
@@ -569,25 +638,36 @@ const PanelPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredWorksites.map((worksite) => (
-                      <TableRow key={worksite.id}>
-                        <TableCell>{worksite.name}</TableCell>
-                        <TableCell>{worksite.created_by?.username || '-'}</TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Düzenle">
-                            <IconButton onClick={() => handleEditWorksite(worksite.id)}>
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Sil">
-                            <IconButton onClick={() => handleDeleteWorksite(worksite.id)}>
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredWorksites
+                      .slice(worksitePage * worksiteRowsPerPage, worksitePage * worksiteRowsPerPage + worksiteRowsPerPage)
+                      .map((worksite) => (
+                        <TableRow key={worksite.id}>
+                          <TableCell>{worksite.name}</TableCell>
+                          <TableCell>{worksite.created_by?.username || '-'}</TableCell>
+                          <TableCell align="right">
+                            <Tooltip title="Düzenle">
+                              <IconButton onClick={() => handleEditWorksite(worksite.id)}>
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Sil">
+                              <IconButton onClick={() => handleDeleteWorksite(worksite.id)}>
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
+                  <TablePagination
+                    component="div"
+                    count={filteredWorksites.length}
+                    page={worksitePage}
+                    onPageChange={handleWorksiteChangePage}
+                    rowsPerPage={worksiteRowsPerPage}
+                    onRowsPerPageChange={handleWorksiteChangeRowsPerPage}
+                    rowsPerPageOptions={[3, 10, 25]}
+                  />
                 </Table>
               </TableContainer>
             </CardContent>
@@ -632,7 +712,7 @@ const PanelPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredGroups.map((group) => (
+                    {filteredWorksites.slice(groupPage * groupRowsPerPage, groupPage * groupRowsPerPage + groupRowsPerPage).map((group) => (
                       <TableRow key={group.id}>
                         <TableCell>{group.name}</TableCell>
                         <TableCell>{group.created_by?.username || '-'}</TableCell>
@@ -651,6 +731,15 @@ const PanelPage = () => {
                       </TableRow>
                     ))}
                   </TableBody>
+                  <TablePagination
+                    component="div"
+                    count={filteredGroups.length}
+                    page={groupPage}
+                    onPageChange={handleGroupChangePage}
+                    rowsPerPage={groupRowsPerPage}
+                    onRowsPerPageChange={handleGroupChangeRowsPerPage}
+                    rowsPerPageOptions={[3, 10, 25]}
+                  />
                 </Table>
               </TableContainer>
             </CardContent>
@@ -697,25 +786,36 @@ const PanelPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredCompanies.map((company) => (
-                      <TableRow key={company.id}>
-                        <TableCell>{company.name}</TableCell>
-                        <TableCell>{company.created_by?.username || '-'}</TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Düzenle">
-                            <IconButton onClick={() => handleEditCompany(company.id)}>
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Sil">
-                            <IconButton onClick={() => handleDeleteCompany(company.id)}>
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredCompanies
+                      .slice(companyPage * companyRowsPerPage, companyPage * companyRowsPerPage + companyRowsPerPage)
+                      .map((company) => (
+                        <TableRow key={company.id}>
+                          <TableCell>{company.name}</TableCell>
+                          <TableCell>{company.created_by?.username || '-'}</TableCell>
+                          <TableCell align="right">
+                            <Tooltip title="Düzenle">
+                              <IconButton onClick={() => handleEditCompany(company.id)}>
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Sil">
+                              <IconButton onClick={() => handleDeleteCompany(company.id)}>
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
+                  <TablePagination
+                    component="div"
+                    count={filteredCompanies.length}
+                    page={companyPage}
+                    onPageChange={handleCompanyChangePage}
+                    rowsPerPage={companyRowsPerPage}
+                    onRowsPerPageChange={handleCompanyChangeRowsPerPage}
+                    rowsPerPageOptions={[3, 10, 25]}
+                  />
                 </Table>
               </TableContainer>
             </CardContent>
@@ -759,25 +859,36 @@ const PanelPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredCustomers.map((customer) => (
-                      <TableRow key={customer.id}>
-                        <TableCell>{customer.name}</TableCell>
-                        <TableCell>{customer.created_by?.username || '-'}</TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="Düzenle">
-                            <IconButton onClick={() => handleEditCustomer(customer.id)}>
-                              <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Sil">
-                            <IconButton onClick={() => handleDeleteCustomer(customer.id)}>
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredCustomers
+                      .slice(customerPage * customerRowsPerPage, customerPage * customerRowsPerPage + customerRowsPerPage)
+                      .map((customer) => (
+                        <TableRow key={customer.id}>
+                          <TableCell>{customer.name}</TableCell>
+                          <TableCell>{customer.created_by?.username || '-'}</TableCell>
+                          <TableCell align="right">
+                            <Tooltip title="Düzenle">
+                              <IconButton onClick={() => handleEditCustomer(customer.id)}>
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Sil">
+                              <IconButton onClick={() => handleDeleteCustomer(customer.id)}>
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
+                  <TablePagination
+                    component="div"
+                    count={filteredCustomers.length}
+                    page={customerPage}
+                    onPageChange={handleCustomerChangePage}
+                    rowsPerPage={customerRowsPerPage}
+                    onRowsPerPageChange={handleCustomerChangeRowsPerPage}
+                    rowsPerPageOptions={[3, 10, 25]}
+                  />
                 </Table>
               </TableContainer>
             </CardContent>
@@ -830,6 +941,43 @@ const PanelPage = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
+                    {filteredPersonals
+                      .slice(personalPage * personalRowsPerPage, personalPage * personalRowsPerPage + personalRowsPerPage)
+                      .map((personal) => (
+                        <TableRow key={personal.id}>
+                          <TableCell>{personal.name}</TableCell>
+                          <TableCell>{personal.identity_number}</TableCell>
+                          <TableCell>{personal.creation_date?.slice(0, 16).replace('T', ' ') || '-'}</TableCell>
+                          <TableCell>{personal.entry?.slice(0, 16).replace('T', ' ') || '-'}</TableCell>
+                          <TableCell>{personal.exit?.slice(0, 16).replace('T', ' ') || '-'}</TableCell>
+                          <TableCell>{personal.worksite_detail?.name || '-'}</TableCell>
+                          <TableCell>{personal.created_by?.username || '-'}</TableCell>
+                          <TableCell align="right">
+                            <Tooltip title="Düzenle">
+                              <IconButton onClick={() => handleEditPersonal(personal.id)}>
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Sil">
+                              <IconButton onClick={() => handleDeletePersonal(personal.id)}>
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                  <TablePagination
+                    component="div"
+                    count={filteredPersonals.length}
+                    page={personalPage}
+                    onPageChange={handlePersonalChangePage}
+                    rowsPerPage={personalRowsPerPage}
+                    onRowsPerPageChange={handlePersonalChangeRowsPerPage}
+                    rowsPerPageOptions={[3, 10, 25]}
+                  />
+
+                  {/* <TableBody>
                     {filteredPersonals.map((personal) => (
                       <TableRow key={personal.id}>
                         <TableCell>{personal.name}</TableCell>
@@ -853,7 +1001,7 @@ const PanelPage = () => {
                         </TableCell>
                       </TableRow>
                     ))}
-                  </TableBody>
+                  </TableBody> */}
                 </Table>
               </TableContainer>
             </CardContent>

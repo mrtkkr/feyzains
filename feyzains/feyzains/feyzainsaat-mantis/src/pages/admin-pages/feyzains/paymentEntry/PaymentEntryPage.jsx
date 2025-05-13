@@ -28,6 +28,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // PDF ikonu ekle
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import { CompanyContext } from 'contexts/admin/feyzains/CompanyContext';
 import { WorksiteContext } from 'contexts/admin/feyzains/WorksiteContext';
@@ -35,6 +36,9 @@ import { GroupContext } from 'contexts/admin/feyzains/GroupContext';
 import { CustomerContext } from 'contexts/admin/feyzains/CustomerContext';
 import axios from 'axios';
 import { PUBLIC_URL } from '../../../../services/network_service';
+import jsPDF from 'jspdf'; // jsPDF kütüphanesini import et
+import 'jspdf-autotable'; // jsPDF-AutoTable eklentisini import et
+import robotoBase64 from '../fonts/roboto-base64';
 import CreatePaymentEntry from './CreatePaymentEntry';
 import EditPaymentEntry from './EditPaymentEntry';
 import ViewPaymentEntry from './ViewPaymentEntry';
@@ -77,6 +81,10 @@ const PaymentEntryPage = () => {
   const { fetchWorksites, worksites } = useContext(WorksiteContext);
   const { fetchGroups, groups } = useContext(GroupContext);
   const { fetchCustomers, customers } = useContext(CustomerContext);
+  const [searchQuery5, setSearchQuery5] = useState('');
+  const [searchQuery6, setSearchQuery6] = useState('');
+  const [searchQuery7, setSearchQuery7] = useState('');
+  const [searchQuery8, setSearchQuery8] = useState('');
 
   // States
   const [order, setOrder] = useState('asc');
@@ -231,6 +239,19 @@ const PaymentEntryPage = () => {
     setSelectedFile(event.target.files[0]);
   };
 
+  const handleFilter = () => {
+    fetchPaymentEntry({
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order,
+      worksite: searchQuery5,
+      group: searchQuery6,
+      company: searchQuery7,
+      customer: searchQuery8
+    });
+  };
+
   const importFromExcel = async () => {
     if (!selectedFile) {
       toast.warning('Lütfen bir Excel dosyası seçin!');
@@ -329,6 +350,153 @@ const PaymentEntryPage = () => {
     }
   };
 
+  // PDF'e aktarma fonksiyonu
+  const exportToPdf = () => {
+    try {
+      if (!payments || payments.length === 0) {
+        toast.warning('PDF için Ödeme girişi verisi bulunamadı!');
+        return;
+      }
+
+      // PDF oluştur
+      const doc = new jsPDF('l', 'mm', 'a3');
+
+      // Roboto fontunu ekleyelim - Türkçe karakterleri destekler
+      doc.addFileToVFS('Roboto-Regular.ttf', robotoBase64);
+      doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+      doc.setFont('Roboto');
+
+      // PDF başlığı
+      doc.setFontSize(16);
+      doc.text('Ödeme Kayıtları', 14, 15);
+
+      // Tarih
+      doc.setFontSize(10);
+      const today = new Date().toLocaleDateString('tr-TR');
+      doc.text(`Oluşturma Tarihi: ${today}`, 14, 22);
+
+      // Tablo konfigürasyonu - Türkçe karakterli başlıklar
+      const headers = ['Tarih', 'Şantiye', 'Grup', 'Şirket', 'Müşteri', 'Banka', 'Çek No', 'Çek Vade', 'Borç'];
+      const columnWidths = [30, 40, 50, 40, 50, 45, 20, 25, 35]; // Kolon genişlikleri
+      const totalTableWidth = columnWidths.reduce((a, b) => a + b, 0);
+      const marginX = (doc.internal.pageSize.getWidth() - totalTableWidth) / 2;
+
+      // Veri hazırlama
+      const filteredData = payments.map((paymentEntryInvoice) => [
+        formatDate(paymentEntryInvoice.date),
+        paymentEntryInvoice.worksite?.name || '-',
+        paymentEntryInvoice.group?.name || '-',
+        paymentEntryInvoice.company?.name || '-',
+        paymentEntryInvoice.customer?.name || '-',
+        paymentEntryInvoice.bank || '-',
+        paymentEntryInvoice.check_no || '-',
+        paymentEntryInvoice.check_time ? formatDate(paymentEntryInvoice.check_time) : '-',
+        formatNumber(paymentEntryInvoice.debt)
+      ]);
+
+      let currentY = 30;
+      const cellHeight = 10;
+
+      // ÖNEMLİ: Font kodlamasını UTF-8 olarak ayarla
+      doc.setFont('Roboto', 'normal');
+      doc.setFontSize(8);
+
+      // Başlıklar
+      doc.setFillColor(66, 66, 66);
+      doc.setTextColor(255, 255, 255);
+
+      // İki adımda çizim yaklaşımı
+      // 1. Adım: Kutuları çiz
+      let currentX = marginX;
+      headers.forEach((header, i) => {
+        doc.rect(currentX, currentY, columnWidths[i], cellHeight, 'F');
+        currentX += columnWidths[i];
+      });
+
+      // 2. Adım: Metinleri yaz - autoEncode özelliğini true yapıyoruz
+      currentX = marginX;
+      headers.forEach((header, i) => {
+        // PDF-lib için metin kodlaması ve konumlandırma ayarları
+        doc.text(header, currentX + 4, currentY + 7, {
+          charSpace: 0,
+          lineHeightFactor: 1,
+          maxWidth: columnWidths[i] - 8,
+          align: 'left'
+        });
+        currentX += columnWidths[i];
+      });
+
+      // Satır verisi
+      currentY += cellHeight;
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+
+      filteredData.forEach((row) => {
+        // Yeni sayfa kontrolü
+        if (currentY + cellHeight > doc.internal.pageSize.getHeight() - 10) {
+          doc.addPage();
+          currentY = 20;
+
+          // Yeni sayfadaki başlıklar
+          currentX = marginX;
+
+          // Kutuları çiz
+          doc.setFillColor(66, 66, 66);
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(10);
+          headers.forEach((header, i) => {
+            doc.rect(currentX, currentY, columnWidths[i], cellHeight, 'F');
+            currentX += columnWidths[i];
+          });
+
+          // Metinleri yaz
+          currentX = marginX;
+          headers.forEach((header, i) => {
+            doc.text(header, currentX + 4, currentY + 7, {
+              charSpace: 0,
+              lineHeightFactor: 1,
+              maxWidth: columnWidths[i] - 8,
+              align: 'left'
+            });
+            currentX += columnWidths[i];
+          });
+
+          currentY += cellHeight;
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(9);
+        }
+
+        // Hücre kutuları
+        currentX = marginX;
+        row.forEach((cell, i) => {
+          doc.rect(currentX, currentY, columnWidths[i], cellHeight);
+          currentX += columnWidths[i];
+        });
+
+        // Hücre metinleri
+        currentX = marginX;
+        row.forEach((cell, i) => {
+          doc.text(cell.toString(), currentX + 4, currentY + 7, {
+            charSpace: 0,
+            lineHeightFactor: 1,
+            maxWidth: columnWidths[i] - 8,
+            align: 'left'
+          });
+          currentX += columnWidths[i];
+        });
+
+        currentY += cellHeight;
+      });
+
+      // PDF'i kaydet
+      doc.save('Ödeme_Kayıtları.pdf');
+      toast.success('PDF başarıyla oluşturuldu!');
+    } catch (error) {
+      toast.error('PDF oluşturulurken hata oluştu.');
+      console.error('PDF export hatası:', error);
+    }
+  };
+
   const visiblePaymentRows = useMemo(() => {
     return payments.sort(getComparator(order, orderBy));
   }, [payments, order, orderBy]);
@@ -363,25 +531,130 @@ const PaymentEntryPage = () => {
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
+      <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mb: 4 }}>
+        <Typography
+          variant="h5"
+          component="h1"
+          sx={{
+            fontWeight: 'bold',
+            color: 'primary.main',
+            letterSpacing: 0.5,
+            mb: 3
+          }}
+        >
+          ÖDEME FİLTRELEME
+        </Typography>
+
+        <Box display="flex" justifyContent="space-between" flexWrap="wrap" gap={2}>
+          {/* Sol taraf: Filtre alanları */}
+          <Box display="flex" flexWrap="wrap" gap={8}>
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Şantiye</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Şantiye Ara..."
+                value={searchQuery5}
+                onChange={(e) => setSearchQuery5(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Grup</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Grup Ara..."
+                value={searchQuery6}
+                onChange={(e) => setSearchQuery6(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Şirket</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Şirket Ara..."
+                value={searchQuery7}
+                onChange={(e) => setSearchQuery7(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Müşteri</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Müşteri Ara..."
+                value={searchQuery8}
+                onChange={(e) => setSearchQuery8(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+          </Box>
+
+          {/* Sağ taraf: Filtrele butonu */}
+          <Box display="flex" alignItems="flex-end">
+            <Button
+              variant="contained"
+              size="medium"
+              onClick={handleFilter}
+              sx={{
+                backgroundColor: '#6c63ff', // özel mor ton (secondary havasında)
+                color: '#fff',
+                '&:hover': {
+                  backgroundColor: '#574fd6'
+                },
+                fontWeight: 'bold',
+                px: 3,
+                borderRadius: 2
+              }}
+            >
+              Filtrele
+            </Button>
+          </Box>
+        </Box>
+      </Paper>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" component="h1">
           Ödeme Kayıtları
         </Typography>
         <Box display="flex" alignItems="center">
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Ödeme Ara..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              )
-            }}
-          />
+          <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
+            PDF'e Aktar
+          </Button>
           <Button variant="outlined" color="secondary" size="small" onClick={exportToExcel} sx={{ ml: 2 }}>
             Excel'e Aktar
           </Button>
