@@ -382,25 +382,71 @@ class SearchPagination(PageNumberPagination):
 
 class SearchPagelistView(APIView):
     def get(self, request):
-        # Parametreleri al
-        order_by = request.query_params.get('order_by', 'search_time')
+        # Sıralama ayarları
+        order_by = request.query_params.get('order_by', 'date')
         order = request.query_params.get('order', 'desc')
 
-        # Tüm veriyi al
+        # Tarih aralığı
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        print("startDateeee:", start_date)
+        print("endDateeee:", end_date)
+
+        # Filtre parametreleri
+        filters = {
+            'worksite__name__icontains': request.query_params.get('worksite', ''),
+            'group__name__icontains': request.query_params.get('group', ''),
+            'company__name__icontains': request.query_params.get('company', ''),
+            'customer__name__icontains': request.query_params.get('customer', ''),
+            'bank__icontains': request.query_params.get('bank', ''),
+            'check_no__icontains': request.query_params.get('check_no', ''),
+            'material__icontains': request.query_params.get('material', ''),
+            'quantity': request.query_params.get('quantity', ''),
+            'unit_price': request.query_params.get('unit_price', ''),
+            'price': request.query_params.get('price', ''),
+            'tax': request.query_params.get('tax', ''),
+            'withholding': request.query_params.get('withholding', ''),
+            'receivable': request.query_params.get('receivable', ''),
+            'debt': request.query_params.get('debt', '')
+        }
+
+        # İlk queryset
         queryset = PaymenInvoice.objects.all()
+
+        # Q objesiyle dinamik filtreleme
+        q_objects = Q()
+
+        print("\n--- Aktif Filtreler ---")
+        for field, value in filters.items():
+            if value != '':
+                print(f"{field} = {value}")
+                q_objects &= Q(**{field: value})
+
+        # Tarih filtrelemesi
+        if start_date and end_date:
+            try:
+                start = make_aware(datetime.combine(datetime.strptime(start_date, '%Y-%m-%d'), time.min))
+                end = make_aware(datetime.combine(datetime.strptime(end_date, '%Y-%m-%d'), time.max))
+                q_objects &= Q(check_time__range=(start, end))
+            except ValueError:
+                return Response({'error': 'Tarih formatı hatalı.'}, status=400)
+
+        # Filtreleri uygula
+        queryset = queryset.filter(q_objects)
+        print("queryseeettt:", queryset.count())
 
         # Sıralama uygula
         if order == 'desc':
-            queryset = queryset.order_by(f'-{order_by}')
-        else:
-            queryset = queryset.order_by(order_by)
+            order_by = f'-{order_by}'
+        queryset = queryset.order_by(order_by)
 
-        # Sayfalama işlemi
+        # Sayfalama ve serialize
         paginator = SearchPagination()
         page = paginator.paginate_queryset(queryset, request)
         serializer = PaymenInvoiceReadSerializer(page, many=True)
-
         return paginator.get_paginated_response(serializer.data)
+    
 
     def post(self, request):
         serializer = PaymenInvoiceSerializer(data=request.data, context={'request': request})
@@ -408,7 +454,9 @@ class SearchPagelistView(APIView):
             serializer.save(created_by=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
+
 class SearchPageDetailView(APIView):
     def get(self, request, pk):
         searchPage = get_object_or_404(PaymenInvoice, pk=pk)

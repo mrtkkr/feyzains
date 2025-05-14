@@ -28,6 +28,7 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // PDF ikonu ekle
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import { CompanyContext } from '../../../../contexts/admin/feyzains/CompanyContext';
@@ -650,15 +651,20 @@ const InvoiceBillPage = () => {
               variant="contained"
               size="medium"
               onClick={handleFilter}
+              startIcon={<FilterListIcon />}
               sx={{
-                backgroundColor: '#f5a623', // özel bir turuncu tonu
+                backgroundColor: '#166866',
                 color: '#fff',
                 '&:hover': {
-                  backgroundColor: '#d48806'
+                  backgroundColor: '#28BCB9',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
                 },
                 fontWeight: 'bold',
                 px: 3,
-                borderRadius: 2
+                py: 1.2,
+                borderRadius: 2,
+                textTransform: 'none',
+                transition: 'all 0.3s ease'
               }}
             >
               Filtrele

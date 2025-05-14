@@ -29,6 +29,10 @@ import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // PDF ikonu ekle
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import trLocale from 'date-fns/locale/tr';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import { CompanyContext } from '../../../../contexts/admin/feyzains/CompanyContext';
 import { WorksiteContext } from '../../../../contexts/admin/feyzains/WorksiteContext';
@@ -44,6 +48,13 @@ import ViewSearch from './ViewSearch';
 import { AuthContext } from 'contexts/auth/AuthContext';
 import * as XLSX from 'xlsx';
 
+const formatDateLocal = (date) => {
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 const formatDate = (dateString) => {
   if (!dateString) return '-';
   const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
@@ -80,6 +91,24 @@ const SearchPage = () => {
   const { fetchWorksites, worksites } = useContext(WorksiteContext);
   const { fetchGroups, groups } = useContext(GroupContext);
   const { fetchCustomers, customers } = useContext(CustomerContext);
+
+  const [searchWorsite, setSearchWorksite] = useState('');
+  const [searchGroup, setSearchGroup] = useState('');
+  const [searchCompany, setSearchCompany] = useState('');
+  const [searchCustomer, setSearchCustomer] = useState('');
+  const [searchBank, setSearchBank] = useState('');
+  const [searchCheckNo, setSearchCheckNo] = useState('');
+
+  const [searchMaterial, setSearchMaterial] = useState('');
+  const [searchQuantity, setSearchQuantity] = useState('');
+  const [searchUnitPrice, setSearchUnitPrice] = useState('');
+  const [searchPrice, setSearchPrice] = useState('');
+  const [searchTax, setSearchTax] = useState('');
+  const [searchWithholding, setSearchWithholding] = useState('');
+  const [searchReceivable, setSearchReceivable] = useState('');
+  const [searchDebt, setSearchDebt] = useState('');
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
 
   // States
   const [order, setOrder] = useState('asc');
@@ -197,18 +226,32 @@ const SearchPage = () => {
     setSelectedFile(event.target.files[0]);
   };
 
-  // const handleFilter = () => {
-  //   fetchSearchs({
-  //     page: page,
-  //     pageSize: rowsPerPage,
-  //     orderBy: orderBy,
-  //     order: order,
-  //     worksite: searchQuery1,
-  //     group: searchQuery2,
-  //     company: searchQuery3,
-  //     customer: searchQuery4
-  //   });
-  // };
+  const handleFilter = () => {
+    const formattedStart = formatDateLocal(startDate);
+    const formattedEnd = formatDateLocal(endDate);
+    fetchSearchs({
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order,
+      worksite: searchWorsite,
+      group: searchGroup,
+      company: searchCompany,
+      customer: searchCustomer,
+      startDate: formattedStart,
+      endDate: formattedEnd,
+      bank: searchBank,
+      check_no: searchCheckNo,
+      material: searchMaterial,
+      quantity: searchQuantity,
+      unit_price: searchUnitPrice,
+      price: searchPrice,
+      tax: searchTax,
+      withholding: searchWithholding,
+      receivable: searchReceivable,
+      debt: searchDebt
+    });
+  };
 
   const importFromExcel = async () => {
     if (!selectedFile) {
@@ -320,126 +363,178 @@ const SearchPage = () => {
     }
   };
 
-  // const exportToPdf = () => {
-  //   try {
-  //     if (!paymentEntryInvoices || paymentEntryInvoices.length === 0) {
-  //       toast.warning('PDF için arama verisi bulunamadı!');
-  //       return;
-  //     }
+  // PDF'e aktarma fonksiyonu
+  const exportToPdf = () => {
+    try {
+      if (!searchs || searchs.length === 0) {
+        toast.warning('PDF için fatura verisi bulunamadı!');
+        return;
+      }
 
-  //     const doc = new jsPDF('l', 'mm', 'a4'); // Yatay A4
-  //     const margin = 10;
-  //     const rowHeight = 10;
-  //     const startY = 30;
-  //     const pageWidth = doc.internal.pageSize.getWidth();
-  //     const today = new Date().toLocaleDateString('tr-TR');
+      // PDF oluştur
+      const doc = new jsPDF('l', 'mm', 'a3');
 
-  //     // Başlık
-  //     doc.setFontSize(16);
-  //     doc.setFont(undefined, 'bold');
-  //     doc.text('Çek Listesi', margin, 15);
+      // Roboto fontunu ekleyelim - Türkçe karakterleri destekler
+      doc.addFileToVFS('Roboto-Regular.ttf', robotoBase64);
+      doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+      doc.setFont('Roboto');
 
-  //     // Tarih
-  //     doc.setFontSize(10);
-  //     doc.setFont(undefined, 'normal');
-  //     doc.text(`Oluşturma Tarihi: ${today}`, margin, 22);
+      // PDF başlığı
+      doc.setFontSize(14);
+      doc.text('Arama Kayıtları', 14, 15);
 
-  //     const headers = [
-  //       'Tarih',
-  //       'Şantiye',
-  //       'Grup',
-  //       'Şirket',
-  //       'Müşteri',
-  //       'Banka',
-  //       'Çek No',
-  //       'Çek Vade',
-  //       'Malzeme',
-  //       'Adet',
-  //       'Birim Fiyatı',
-  //       'Tutar',
-  //       'KDV',
-  //       'Tevkifat',
-  //       'Alacak',
-  //       'Borç Tutarı'
-  //     ];
+      // Tarih
+      doc.setFontSize(9);
+      const today = new Date().toLocaleDateString('tr-TR');
+      doc.text(`Oluşturma Tarihi: ${today}`, 14, 22);
 
-  //     // Kolon genişlikleri - A4 yatay sayfaya sığacak şekilde dengelendi
-  //     const columnWidths = [25, 30, 30, 35, 35, 30, 25, 25, 30, 20, 25, 25, 20, 20, 30, 30];
+      // Tablo konfigürasyonu - Türkçe karakterli başlıklar
+      const headers = [
+        'Tarih',
+        'Şantiye',
+        'Grup',
+        'Şirk.',
+        'Müşt.',
+        'Banka',
+        'Çek No',
+        'Vade',
+        'Malzeme',
+        'Adet',
+        'Birim ₺',
+        'Tutar',
+        'KDV',
+        'Tevk.',
+        'Alacak',
+        'Borç'
+      ];
+      const columnWidths = [27, 25, 45, 35, 35, 25, 20, 28, 25, 24, 20, 25, 20, 20, 25, 25]; // Kolon genişlikleri
+      const totalTableWidth = columnWidths.reduce((a, b) => a + b, 0);
+      const marginX = (doc.internal.pageSize.getWidth() - totalTableWidth) / 2;
 
-  //     const filteredData = filteredSearchs.map((entry) => [
-  //       formatDate(entry.date),
-  //       entry.worksite?.name || '-',
-  //       entry.group?.name || '-',
-  //       entry.company?.name || '-',
-  //       entry.customer?.name || '-',
-  //       entry.bank || '-',
-  //       entry.check_no || '-',
-  //       entry.check_time ? formatDate(entry.check_time) : '-',
-  //       entry.material || '-',
-  //       entry.quantity || '-',
-  //       formatNumber(entry.unit_price),
-  //       formatNumber(entry.price),
-  //       entry.tax || '-',
-  //       entry.withholding || '-',
-  //       entry.receivable || '-',
-  //       formatNumber(entry.debt)
-  //     ]);
+      // Veri hazırlama
+      const filteredData = searchs.map((paymentEntryInvoice) => [
+        formatDate(paymentEntryInvoice.date),
+        paymentEntryInvoice.worksite?.name || '-',
+        paymentEntryInvoice.group?.name || '-',
+        paymentEntryInvoice.company?.name || '-',
+        paymentEntryInvoice.customer?.name || '-',
+        paymentEntryInvoice.bank?.name || '-',
+        paymentEntryInvoice.check_no || '-', // eklendi
+        paymentEntryInvoice.check_time // eklendi
+          ? formatDate(paymentEntryInvoice.check_time)
+          : '-',
+        paymentEntryInvoice.material || '-',
+        paymentEntryInvoice.quantity || '-',
+        formatNumber(paymentEntryInvoice.unit_price),
+        formatNumber(paymentEntryInvoice.price),
+        paymentEntryInvoice.tax || '-',
+        paymentEntryInvoice.withholding || '-',
+        formatNumber(paymentEntryInvoice.receivable) || '-',
+        formatNumber(paymentEntryInvoice.debt) || '-' // eklendi
+      ]);
 
-  //     let currentY = startY;
+      let currentY = 30;
+      const cellHeight = 9;
 
-  //     const drawTableHeader = () => {
-  //       let currentX = margin;
-  //       doc.setFillColor(66, 66, 66);
-  //       doc.setTextColor(255, 255, 255);
-  //       doc.setFontSize(5);
-  //       doc.setFont(undefined, 'bold');
+      // ÖNEMLİ: Font kodlamasını UTF-8 olarak ayarla
+      doc.setFont('Roboto', 'normal');
+      doc.setFontSize(7);
 
-  //       headers.forEach((title, i) => {
-  //         doc.rect(currentX, currentY, columnWidths[i], rowHeight, 'F');
-  //         const headerText = doc.splitTextToSize(title, columnWidths[i] - 2);
-  //         doc.text(headerText, currentX + columnWidths[i] / 2, currentY + rowHeight / 2, {
-  //           align: 'center',
-  //           baseline: 'middle'
-  //         });
-  //         currentX += columnWidths[i];
-  //       });
+      // Başlıklar
+      doc.setFillColor(66, 66, 66);
+      doc.setTextColor(255, 255, 255);
 
-  //       currentY += rowHeight;
-  //     };
+      // İki adımda çizim yaklaşımı
+      // 1. Adım: Kutuları çiz
+      let currentX = marginX;
+      headers.forEach((header, i) => {
+        doc.rect(currentX, currentY, columnWidths[i], cellHeight, 'F');
+        currentX += columnWidths[i];
+      });
 
-  //     const drawTableRow = (row) => {
-  //       if (currentY + rowHeight > doc.internal.pageSize.getHeight() - margin) {
-  //         doc.addPage();
-  //         currentY = margin;
-  //         drawTableHeader();
-  //       }
+      // 2. Adım: Metinleri yaz - autoEncode özelliğini true yapıyoruz
+      currentX = marginX;
+      headers.forEach((header, i) => {
+        // PDF-lib için metin kodlaması ve konumlandırma ayarları
+        doc.text(header, currentX + 4, currentY + 7, {
+          charSpace: 0,
+          lineHeightFactor: 1,
+          maxWidth: columnWidths[i] - 8,
+          align: 'left'
+        });
+        currentX += columnWidths[i];
+      });
 
-  //       let currentX = margin;
-  //       doc.setFont(undefined, 'normal');
-  //       doc.setFontSize(8);
-  //       doc.setTextColor(0, 0, 0);
+      // Satır verisi
+      currentY += cellHeight;
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
 
-  //       row.forEach((cell, i) => {
-  //         doc.rect(currentX, currentY, columnWidths[i], rowHeight);
-  //         const textLines = doc.splitTextToSize(cell.toString(), columnWidths[i] - 2);
-  //         doc.text(textLines, currentX + 1, currentY + 4); // Çok satırlı destek
-  //         currentX += columnWidths[i];
-  //       });
+      filteredData.forEach((row) => {
+        // Yeni sayfa kontrolü
+        if (currentY + cellHeight > doc.internal.pageSize.getHeight() - 10) {
+          doc.addPage();
+          currentY = 20;
 
-  //       currentY += rowHeight;
-  //     };
+          // Yeni sayfadaki başlıklar
+          currentX = marginX;
 
-  //     drawTableHeader();
+          // Kutuları çiz
+          doc.setFillColor(66, 66, 66);
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(10);
+          headers.forEach((header, i) => {
+            doc.rect(currentX, currentY, columnWidths[i], cellHeight, 'F');
+            currentX += columnWidths[i];
+          });
 
-  //     filteredData.forEach((row) => drawTableRow(row));
+          // Metinleri yaz
+          currentX = marginX;
+          headers.forEach((header, i) => {
+            doc.text(header, currentX + 4, currentY + 7, {
+              charSpace: 0,
+              lineHeightFactor: 1,
+              maxWidth: columnWidths[i] - 8,
+              align: 'left'
+            });
+            currentX += columnWidths[i];
+          });
 
-  //     doc.save('Arama_Bolumu.pdf');
-  //     toast.success('PDF başarıyla oluşturuldu!');
-  //   } catch (error) {
-  //     toast.error('PDF oluşturulurken bir hata oluştu.');
-  //     console.error('PDF export hatası:', error);
-  //   }
-  // };
+          currentY += cellHeight;
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(9);
+        }
+
+        // Hücre kutuları
+        currentX = marginX;
+        row.forEach((cell, i) => {
+          doc.rect(currentX, currentY, columnWidths[i], cellHeight);
+          currentX += columnWidths[i];
+        });
+
+        // Hücre metinleri
+        currentX = marginX;
+        row.forEach((cell, i) => {
+          doc.text(cell.toString(), currentX + 4, currentY + 7, {
+            charSpace: 0,
+            lineHeightFactor: 1,
+            maxWidth: columnWidths[i] - 8,
+            align: 'left'
+          });
+          currentX += columnWidths[i];
+        });
+
+        currentY += cellHeight;
+      });
+
+      // PDF'i kaydet
+      doc.save('Arama_Kayıtları.pdf');
+      toast.success('PDF başarıyla oluşturuldu!');
+    } catch (error) {
+      toast.error('PDF oluşturulurken hata oluştu.');
+      console.error('PDF export hatası:', error);
+    }
+  };
 
   // IMPORTANT: Using memoized props to pass to child components
 
@@ -468,6 +563,346 @@ const SearchPage = () => {
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
+      <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mb: 4 }}>
+        <Typography
+          variant="h5"
+          component="h1"
+          sx={{
+            fontWeight: 'bold',
+            color: 'primary.main',
+            letterSpacing: 0.5,
+            mb: 3
+          }}
+        >
+          ARAMA FİLTRELEME
+        </Typography>
+
+        <Box display="flex" justifyContent="space-between" flexWrap="wrap" gap={2}>
+          {/* Sol taraf: Filtre alanları */}
+          <Box display="flex" flexWrap="wrap" gap={8}>
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Şantiye</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Şantiye Ara..."
+                value={searchWorsite}
+                onChange={(e) => setSearchWorksite(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Grup</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Grup Ara..."
+                value={searchGroup}
+                onChange={(e) => setSearchGroup(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Şirket</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Şirket Ara..."
+                value={searchCompany}
+                onChange={(e) => setSearchCompany(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Müşteri</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Müşteri Ara..."
+                value={searchCustomer}
+                onChange={(e) => setSearchCustomer(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Banka</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Banka Ara..."
+                value={searchBank}
+                onChange={(e) => setSearchBank(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Çek No</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Çek No Ara..."
+                value={searchCheckNo}
+                onChange={(e) => setSearchCheckNo(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Malzeme</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Malzeme Ara..."
+                value={searchMaterial}
+                onChange={(e) => setSearchMaterial(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Adet</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Adet Ara..."
+                value={searchQuantity}
+                onChange={(e) => setSearchQuantity(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Birim Fiyatı</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Birim Fiyat Ara..."
+                value={searchUnitPrice}
+                onChange={(e) => setSearchUnitPrice(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Tutar</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Tutar Ara..."
+                value={searchPrice}
+                onChange={(e) => setSearchPrice(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">KDV</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="KDV Ara..."
+                value={searchTax}
+                onChange={(e) => setSearchTax(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Tevkifat</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Tevkifat Ara..."
+                value={searchWithholding}
+                onChange={(e) => setSearchWithholding(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Alacak</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Alacak Ara..."
+                value={searchReceivable}
+                onChange={(e) => setSearchReceivable(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+              <Typography variant="subtitle2">Borç</Typography>
+              <TextField
+                variant="outlined"
+                size="small"
+                placeholder="Borç Ara..."
+                value={searchDebt}
+                onChange={(e) => setSearchDebt(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  )
+                }}
+                fullWidth
+              />
+            </Box>
+
+            <Box display="flex" flexDirection="row" minWidth={200} gap={1}>
+              <Box display="flex" flexDirection="column" gap={1} minWidth={400}>
+                <Typography variant="subtitle2">Çek Vade</Typography>
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={trLocale}>
+                  <Box display="flex" gap={2}>
+                    <DatePicker
+                      label="Başlangıç"
+                      value={startDate}
+                      onChange={(newValue) => setStartDate(newValue)}
+                      slotProps={{
+                        textField: {
+                          size: 'medium',
+                          variant: 'outlined',
+                          fullWidth: true
+                        }
+                      }}
+                    />
+                    <DatePicker
+                      label="Bitiş"
+                      value={endDate}
+                      minDate={startDate}
+                      onChange={(newValue) => setEndDate(newValue)}
+                      slotProps={{
+                        textField: {
+                          size: 'medium',
+                          variant: 'outlined',
+                          fullWidth: true
+                        }
+                      }}
+                    />
+                  </Box>
+                </LocalizationProvider>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Sağ taraf: Filtrele butonu */}
+          <Box display="flex" alignItems="flex-end">
+            <Button
+              variant="contained"
+              size="medium"
+              onClick={handleFilter}
+              startIcon={<FilterListIcon />}
+              sx={{
+                backgroundColor: '#E99AC4',
+                color: '#fff',
+                '&:hover': {
+                  backgroundColor: '#EA6560',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                },
+                fontWeight: 'bold',
+                px: 3,
+                py: 1.2,
+                borderRadius: 2,
+                textTransform: 'none',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Filtrele
+            </Button>
+          </Box>
+        </Box>
+      </Paper>
+
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" component="h1">
           Arama Bölümü
@@ -487,9 +922,9 @@ const SearchPage = () => {
               )
             }}
           />
-          {/* <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
+          <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
             PDF'e Aktar
-          </Button> */}
+          </Button>
           <Button variant="outlined" color="secondary" size="small" onClick={exportToExcel} sx={{ ml: 2 }}>
             Excel'e Aktar
           </Button>

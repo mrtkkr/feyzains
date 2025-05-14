@@ -32,6 +32,18 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
     if (!date) return '';
     return new Date(date).toISOString().split('T')[0]; // '2026-05-10' gibi
   };
+  const formatDate2 = (date) => {
+    if (!date) return null;
+
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+
+    // Zaman dilimi farkı ile uğraşmamak için UTC olarak alın:
+    return `${year}-${month}-${day}`;
+  };
+
   const fetchInvoice = useCallback(
     async ({
       type = 'invoice',
@@ -184,35 +196,83 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
     []
   );
 
-  const fetchSearchs = useCallback(async ({ page = 0, pageSize = 10, orderBy = 'search_time', order = 'desc' }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const queryParams = {
-        page: page + 1, // Django'da sayfalar 1-indexli
-        page_size: pageSize,
-        order_by: orderBy,
-        order: order
-      };
-      // Müşteriler
-      const res = await sendApiRequest({ url: baseUrl + searchListUrl, method: 'GET', queryParams });
-      // Başarıyla gelen yanıtı logla
-      console.log('API Response:', res);
-      if (res.response.status === 200) {
-        setSearchs(res.data.results || []);
-        setCount(res.data.count || 0); // toplam kayıt sayısı
-        setPaymentEntryInvoices(res.data || []);
-      } else {
-        setError('Arama sayfası alınırken bir hata oluştu.');
-        console.error('Failed to fetch supplier checkLists:', res.response);
+  const fetchSearchs = useCallback(
+    async ({
+      page = 0,
+      pageSize = 10,
+      order_by = 'date',
+      order = 'desc',
+      worksite = '',
+      group = '',
+      company = '',
+      customer = '',
+      startDate = null,
+      endDate = null,
+      bank = '',
+      check_no = '',
+      material = '',
+      quantity = '',
+      unit_price = '',
+      price = '',
+      tax = '',
+      withholding = '',
+      receivable = '',
+      debt = ''
+    }) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const queryParams = {
+          page: page + 1, // Django'da sayfalar 1-indexli
+          page_size: pageSize,
+          order_by: order_by,
+          order: order
+        };
+        // Log the date parameters specifically for debugging
+        console.log('Date parameters to be sent:', {
+          startDate,
+          endDate
+        });
+
+        // Sadece dolu olanları ekle
+        if (startDate) queryParams.start_date = formatDate2(startDate);
+        if (endDate) queryParams.end_date = formatDate2(endDate);
+        if (worksite) queryParams.worksite = worksite;
+        if (group) queryParams.group = group;
+        if (company) queryParams.company = company;
+        if (customer) queryParams.customer = customer;
+        if (bank) queryParams.bank = bank;
+        if (check_no) queryParams.check_no = check_no;
+        if (material) queryParams.material = material;
+        if (quantity) queryParams.quantity = quantity;
+        if (unit_price) queryParams.unit_price = unit_price;
+        if (price) queryParams.price = price;
+        if (tax) queryParams.tax = tax;
+        if (withholding) queryParams.withholding = withholding;
+        if (receivable) queryParams.receivable = receivable;
+        if (debt) queryParams.debt = debt;
+
+        // Müşteriler
+        const res = await sendApiRequest({ url: baseUrl + searchListUrl, method: 'GET', queryParams });
+        // Başarıyla gelen yanıtı logla
+        console.log('API Response:', res);
+        if (res.response.status === 200) {
+          setSearchs(res.data.results || []);
+          setCount(res.data.count || 0); // toplam kayıt sayısı
+          setPaymentEntryInvoices(res.data || []);
+        } else {
+          setError('Arama sayfası alınırken bir hata oluştu.');
+          console.error('Failed to fetch supplier checkLists:', res.response);
+        }
+      } catch (error) {
+        setError('API çağrısı başarısız oldu.');
+        console.error('Failed to fetch checkList:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      setError('API çağrısı başarısız oldu.');
-      console.error('Failed to fetch checkList:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   const createInvoice = async (data) => {
     setLoading(true);

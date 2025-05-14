@@ -34,6 +34,7 @@ import { CompanyContext } from 'contexts/admin/feyzains/CompanyContext';
 import { WorksiteContext } from 'contexts/admin/feyzains/WorksiteContext';
 import { GroupContext } from 'contexts/admin/feyzains/GroupContext';
 import { CustomerContext } from 'contexts/admin/feyzains/CustomerContext';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import axios from 'axios';
 import { PUBLIC_URL } from '../../../../services/network_service';
 import jsPDF from 'jspdf'; // jsPDF kütüphanesini import et
@@ -631,15 +632,20 @@ const PaymentEntryPage = () => {
               variant="contained"
               size="medium"
               onClick={handleFilter}
+              startIcon={<FilterListIcon />}
               sx={{
-                backgroundColor: '#6c63ff', // özel mor ton (secondary havasında)
+                backgroundColor: '#9C1A15',
                 color: '#fff',
                 '&:hover': {
-                  backgroundColor: '#574fd6'
+                  backgroundColor: '#EA6560',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
                 },
                 fontWeight: 'bold',
                 px: 3,
-                borderRadius: 2
+                py: 1.2,
+                borderRadius: 2,
+                textTransform: 'none',
+                transition: 'all 0.3s ease'
               }}
             >
               Filtrele
