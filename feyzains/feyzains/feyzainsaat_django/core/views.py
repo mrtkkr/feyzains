@@ -378,7 +378,7 @@ class ChecklistView(APIView):
 
 
 class SearchPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 15
 
 class SearchPagelistView(APIView):
     def get(self, request):

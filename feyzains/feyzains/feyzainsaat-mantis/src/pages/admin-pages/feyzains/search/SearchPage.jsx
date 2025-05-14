@@ -47,6 +47,7 @@ import EditSearch from './EditSearch';
 import ViewSearch from './ViewSearch';
 import { AuthContext } from 'contexts/auth/AuthContext';
 import * as XLSX from 'xlsx';
+import { flexbox } from '@mui/system';
 
 const formatDateLocal = (date) => {
   if (!date) return '';
@@ -114,7 +115,7 @@ const SearchPage = () => {
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
   const [isEditSearchDialogOpen, setIsEditSearchDialogOpen] = useState(false);
 
   const [isViewSearchDialogOpen, setIsViewSearchDialogOpen] = useState(false);
@@ -176,7 +177,7 @@ const SearchPage = () => {
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+    setRowsPerPage(parseInt(event.target.value, 15));
     setPage(0);
   };
 
@@ -562,481 +563,470 @@ const SearchPage = () => {
   );
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mb: 4 }}>
-        <Typography
-          variant="h5"
-          component="h1"
-          sx={{
-            fontWeight: 'bold',
-            color: 'primary.main',
-            letterSpacing: 0.5,
-            mb: 3
-          }}
-        >
-          ARAMA FİLTRELEME
-        </Typography>
-
-        <Box display="flex" justifyContent="space-between" flexWrap="wrap" gap={2}>
-          {/* Sol taraf: Filtre alanları */}
-          <Box display="flex" flexWrap="wrap" gap={8}>
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Şantiye</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Şantiye Ara..."
-                value={searchWorsite}
-                onChange={(e) => setSearchWorksite(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Grup</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Grup Ara..."
-                value={searchGroup}
-                onChange={(e) => setSearchGroup(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Şirket</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Şirket Ara..."
-                value={searchCompany}
-                onChange={(e) => setSearchCompany(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Müşteri</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Müşteri Ara..."
-                value={searchCustomer}
-                onChange={(e) => setSearchCustomer(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Banka</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Banka Ara..."
-                value={searchBank}
-                onChange={(e) => setSearchBank(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Çek No</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Çek No Ara..."
-                value={searchCheckNo}
-                onChange={(e) => setSearchCheckNo(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Malzeme</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Malzeme Ara..."
-                value={searchMaterial}
-                onChange={(e) => setSearchMaterial(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Adet</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Adet Ara..."
-                value={searchQuantity}
-                onChange={(e) => setSearchQuantity(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Birim Fiyatı</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Birim Fiyat Ara..."
-                value={searchUnitPrice}
-                onChange={(e) => setSearchUnitPrice(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Tutar</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Tutar Ara..."
-                value={searchPrice}
-                onChange={(e) => setSearchPrice(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">KDV</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="KDV Ara..."
-                value={searchTax}
-                onChange={(e) => setSearchTax(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Tevkifat</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Tevkifat Ara..."
-                value={searchWithholding}
-                onChange={(e) => setSearchWithholding(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Alacak</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Alacak Ara..."
-                value={searchReceivable}
-                onChange={(e) => setSearchReceivable(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-            <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
-              <Typography variant="subtitle2">Borç</Typography>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Borç Ara..."
-                value={searchDebt}
-                onChange={(e) => setSearchDebt(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  )
-                }}
-                fullWidth
-              />
-            </Box>
-
-            <Box display="flex" flexDirection="row" minWidth={200} gap={1}>
-              <Box display="flex" flexDirection="column" gap={1} minWidth={400}>
-                <Typography variant="subtitle2">Çek Vade</Typography>
-                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={trLocale}>
-                  <Box display="flex" gap={2}>
-                    <DatePicker
-                      label="Başlangıç"
-                      value={startDate}
-                      onChange={(newValue) => setStartDate(newValue)}
-                      slotProps={{
-                        textField: {
-                          size: 'medium',
-                          variant: 'outlined',
-                          fullWidth: true
-                        }
-                      }}
-                    />
-                    <DatePicker
-                      label="Bitiş"
-                      value={endDate}
-                      minDate={startDate}
-                      onChange={(newValue) => setEndDate(newValue)}
-                      slotProps={{
-                        textField: {
-                          size: 'medium',
-                          variant: 'outlined',
-                          fullWidth: true
-                        }
-                      }}
-                    />
-                  </Box>
-                </LocalizationProvider>
-              </Box>
+    <>
+      <Box display="flex">
+        <Box sx={{ flexGrow: 1, p: 3, width: '85%' }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h5" component="h1">
+              Arama Kayıtları
+            </Typography>
+            <Box display="flex" alignItems="center">
+              <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
+                PDF'e Aktar
+              </Button>
+              <Button variant="outlined" color="secondary" size="small" onClick={exportToExcel} sx={{ ml: 2 }}>
+                Excel'e Aktar
+              </Button>
             </Box>
           </Box>
 
-          {/* Sağ taraf: Filtrele butonu */}
-          <Box display="flex" alignItems="flex-end">
-            <Button
-              variant="contained"
-              size="medium"
-              onClick={handleFilter}
-              startIcon={<FilterListIcon />}
+          {loading ? (
+            <Box display="flex" justifyContent="center" my={4}>
+              <CircularProgress />
+            </Box>
+          ) : error ? (
+            <Box bgcolor="error.light" p={2} borderRadius={1} mb={3}>
+              <Typography color="error">{error}</Typography>
+            </Box>
+          ) : (
+            <>
+              {isEditSearchDialogOpen && selectedSearchId && <EditSearch {...editSearchProps} />}
+
+              {isViewSearchDialogOpen && selectedSearchId && <ViewSearch {...viewSearchProps} />}
+
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Tarih</TableCell>
+                      <TableCell>Şantiye</TableCell>
+                      <TableCell>Grup</TableCell>
+                      <TableCell>Şirket</TableCell>
+                      <TableCell>Müşteri</TableCell>
+                      <TableCell>Banka</TableCell>
+                      <TableCell>Çek No</TableCell>
+                      <TableCell>Çek Vade</TableCell>
+                      <TableCell>Malzeme</TableCell>
+                      <TableCell>Adet</TableCell>
+                      <TableCell>Birim Fiyatı</TableCell>
+                      <TableCell>Tutar</TableCell>
+                      <TableCell>KDV</TableCell>
+                      <TableCell>Tevkifat</TableCell>
+                      <TableCell>Alacak</TableCell>
+                      <TableCell>Borç</TableCell>
+                      <TableCell align="right">İşlemler</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {visibleSearchRows.length > 0 ? (
+                      visibleSearchRows.map((searchs) => (
+                        <TableRow key={searchs.id}>
+                          <TableCell>{formatDate(searchs.date)}</TableCell>
+                          <TableCell>{searchs.worksite?.name || '-'}</TableCell>
+                          <TableCell>{searchs.group?.name || '-'}</TableCell>
+                          <TableCell>{searchs.company?.name || '-'}</TableCell>
+                          <TableCell>{searchs.customer?.name || '-'}</TableCell>
+                          <TableCell>{searchs.bank || '-'}</TableCell>
+                          <TableCell>{searchs.check_no || '-'}</TableCell>
+                          <TableCell>{formatDate(searchs.check_time)}</TableCell>
+                          <TableCell>{searchs.material || '-'}</TableCell>
+                          <TableCell>{searchs.quantity || '-'}</TableCell>
+                          <TableCell>{formatNumber(searchs.unit_price)}</TableCell>
+                          <TableCell>{formatNumber(searchs.price)}</TableCell>
+                          <TableCell>{searchs.tax || '-'}</TableCell>
+                          <TableCell>{searchs.withholding || '-'}</TableCell>
+                          <TableCell>{formatNumber(searchs.receivable) || '-'}</TableCell>
+                          <TableCell>{formatNumber(searchs.debt) || '-'}</TableCell>
+                          <TableCell align="right">
+                            <Tooltip title="Detay">
+                              <IconButton onClick={() => handleViewSearchClick(searchs.id)}>
+                                <VisibilityIcon />
+                              </IconButton>
+                            </Tooltip>
+                            {isAdmin && (
+                              <>
+                                <Tooltip title="Düzenle">
+                                  <IconButton onClick={() => handleEditSearchClick(searchs.id)}>
+                                    <EditIcon />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Sil">
+                                  <IconButton onClick={() => handleDeleteSearch(searchs.id)}>
+                                    <DeleteIcon />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={13} align="center">
+                          <Typography variant="body1" py={2}>
+                            {searchQuery3 ? 'Arama kriterlerinize uygun fatura kaydı bulunamadı.' : 'Henüz fatura kaydı bulunmamaktadır.'}
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TablePagination
+                rowsPerPageOptions={[15, 30, 90]}
+                component="div"
+                count={count}
+                rowsPerPage={rowsPerPage}
+                page={page}
+                onPageChange={handleChangePage}
+                onRowsPerPageChange={handleChangeRowsPerPage}
+                labelRowsPerPage="Sayfa başına kayıt:"
+                labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+              />
+            </>
+          )}
+        </Box>
+        <Box sx={{ width: '15%' }}>
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mb: 4 }}>
+            <Typography
+              variant="h5"
+              component="h1"
               sx={{
-                backgroundColor: '#E99AC4',
-                color: '#fff',
-                '&:hover': {
-                  backgroundColor: '#EA6560',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                },
                 fontWeight: 'bold',
-                px: 3,
-                py: 1.2,
-                borderRadius: 2,
-                textTransform: 'none',
-                transition: 'all 0.3s ease'
+                color: 'primary.main',
+                letterSpacing: 0.5,
+                mb: 3
               }}
             >
-              Filtrele
-            </Button>
-          </Box>
-        </Box>
-      </Paper>
+              ARAMA FİLTRELEME
+            </Typography>
 
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h5" component="h1">
-          Arama Bölümü
-        </Typography>
-        <Box display="flex" alignItems="center">
-          <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Genel Ara..."
-            value={searchQuery3}
-            onChange={(e) => setSearchQuery3(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              )
-            }}
-          />
-          <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
-            PDF'e Aktar
-          </Button>
-          <Button variant="outlined" color="secondary" size="small" onClick={exportToExcel} sx={{ ml: 2 }}>
-            Excel'e Aktar
-          </Button>
+            <Box display="flex" justifyContent="space-between" flexWrap="wrap" gap={2}>
+              {/* Sol taraf: Filtre alanları */}
+              <Box display="flex" flexWrap="wrap" gap={8}>
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Şantiye</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Şantiye Ara..."
+                    value={searchWorsite}
+                    onChange={(e) => setSearchWorksite(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Grup</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Grup Ara..."
+                    value={searchGroup}
+                    onChange={(e) => setSearchGroup(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Şirket</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Şirket Ara..."
+                    value={searchCompany}
+                    onChange={(e) => setSearchCompany(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Müşteri</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Müşteri Ara..."
+                    value={searchCustomer}
+                    onChange={(e) => setSearchCustomer(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Banka</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Banka Ara..."
+                    value={searchBank}
+                    onChange={(e) => setSearchBank(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Çek No</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Çek No Ara..."
+                    value={searchCheckNo}
+                    onChange={(e) => setSearchCheckNo(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Malzeme</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Malzeme Ara..."
+                    value={searchMaterial}
+                    onChange={(e) => setSearchMaterial(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Adet</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Adet Ara..."
+                    value={searchQuantity}
+                    onChange={(e) => setSearchQuantity(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Birim Fiyatı</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Birim Fiyat Ara..."
+                    value={searchUnitPrice}
+                    onChange={(e) => setSearchUnitPrice(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Tutar</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Tutar Ara..."
+                    value={searchPrice}
+                    onChange={(e) => setSearchPrice(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">KDV</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="KDV Ara..."
+                    value={searchTax}
+                    onChange={(e) => setSearchTax(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Tevkifat</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Tevkifat Ara..."
+                    value={searchWithholding}
+                    onChange={(e) => setSearchWithholding(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Alacak</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Alacak Ara..."
+                    value={searchReceivable}
+                    onChange={(e) => setSearchReceivable(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Borç</Typography>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Borç Ara..."
+                    value={searchDebt}
+                    onChange={(e) => setSearchDebt(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      )
+                    }}
+                    fullWidth
+                  />
+                </Box>
+
+                <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
+                  <Typography variant="subtitle2">Çek Vade</Typography>
+                  <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={trLocale}>
+                    <Box display="flex" gap={2}>
+                      <DatePicker
+                        label="Başlangıç"
+                        value={startDate}
+                        onChange={(newValue) => setStartDate(newValue)}
+                        slotProps={{
+                          textField: {
+                            size: 'medium',
+                            variant: 'outlined',
+                            fullWidth: true
+                          }
+                        }}
+                      />
+                      <DatePicker
+                        label="Bitiş"
+                        value={endDate}
+                        minDate={startDate}
+                        onChange={(newValue) => setEndDate(newValue)}
+                        slotProps={{
+                          textField: {
+                            size: 'medium',
+                            variant: 'outlined',
+                            fullWidth: true
+                          }
+                        }}
+                      />
+                    </Box>
+                  </LocalizationProvider>
+                </Box>
+              </Box>
+
+              {/* Sağ taraf: Filtrele butonu */}
+              <Box display="flex" alignItems="flex-end">
+                <Button
+                  variant="contained"
+                  size="medium"
+                  onClick={handleFilter}
+                  startIcon={<FilterListIcon />}
+                  sx={{
+                    backgroundColor: '#E99AC4',
+                    color: '#fff',
+                    '&:hover': {
+                      backgroundColor: '#EA6560',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                    },
+                    fontWeight: 'bold',
+                    px: 3,
+                    py: 1.2,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Filtrele
+                </Button>
+              </Box>
+            </Box>
+          </Paper>
         </Box>
       </Box>
-
-      {loading ? (
-        <Box display="flex" justifyContent="center" my={4}>
-          <CircularProgress />
-        </Box>
-      ) : error ? (
-        <Box bgcolor="error.light" p={2} borderRadius={1} mb={3}>
-          <Typography color="error">{error}</Typography>
-        </Box>
-      ) : (
-        <>
-          {isEditSearchDialogOpen && selectedSearchId && <EditSearch {...editSearchProps} />}
-
-          {isViewSearchDialogOpen && selectedSearchId && <ViewSearch {...viewSearchProps} />}
-
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Tarih</TableCell>
-                  <TableCell>Şantiye</TableCell>
-                  <TableCell>Grup</TableCell>
-                  <TableCell>Şirket</TableCell>
-                  <TableCell>Müşteri</TableCell>
-                  <TableCell>Banka</TableCell>
-                  <TableCell>Çek No</TableCell>
-                  <TableCell>Çek Vade</TableCell>
-                  <TableCell>Malzeme</TableCell>
-                  <TableCell>Adet</TableCell>
-                  <TableCell>Birim Fiyatı</TableCell>
-                  <TableCell>Tutar</TableCell>
-                  <TableCell>KDV</TableCell>
-                  <TableCell>Tevkifat</TableCell>
-                  <TableCell>Alacak</TableCell>
-                  <TableCell>Borç</TableCell>
-                  <TableCell align="right">İşlemler</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {visibleSearchRows.length > 0 ? (
-                  visibleSearchRows.map((searchs) => (
-                    <TableRow key={searchs.id}>
-                      <TableCell>{formatDate(searchs.date)}</TableCell>
-                      <TableCell>{searchs.worksite?.name || '-'}</TableCell>
-                      <TableCell>{searchs.group?.name || '-'}</TableCell>
-                      <TableCell>{searchs.company?.name || '-'}</TableCell>
-                      <TableCell>{searchs.customer?.name || '-'}</TableCell>
-                      <TableCell>{searchs.bank || '-'}</TableCell>
-                      <TableCell>{searchs.check_no || '-'}</TableCell>
-                      <TableCell>{formatDate(searchs.check_time)}</TableCell>
-                      <TableCell>{searchs.material || '-'}</TableCell>
-                      <TableCell>{searchs.quantity || '-'}</TableCell>
-                      <TableCell>{formatNumber(searchs.unit_price)}</TableCell>
-                      <TableCell>{formatNumber(searchs.price)}</TableCell>
-                      <TableCell>{searchs.tax || '-'}</TableCell>
-                      <TableCell>{searchs.withholding || '-'}</TableCell>
-                      <TableCell>{formatNumber(searchs.receivable) || '-'}</TableCell>
-                      <TableCell>{formatNumber(searchs.debt) || '-'}</TableCell>
-                      <TableCell align="right">
-                        <Tooltip title="Detay">
-                          <IconButton onClick={() => handleViewSearchClick(searchs.id)}>
-                            <VisibilityIcon />
-                          </IconButton>
-                        </Tooltip>
-                        {isAdmin && (
-                          <>
-                            <Tooltip title="Düzenle">
-                              <IconButton onClick={() => handleEditSearchClick(searchs.id)}>
-                                <EditIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Sil">
-                              <IconButton onClick={() => handleDeleteSearch(searchs.id)}>
-                                <DeleteIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={13} align="center">
-                      <Typography variant="body1" py={2}>
-                        {searchQuery3 ? 'Arama kriterlerinize uygun fatura kaydı bulunamadı.' : 'Henüz fatura kaydı bulunmamaktadır.'}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <TablePagination
-            rowsPerPageOptions={[10, 25, 50]}
-            component="div"
-            count={count}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage="Sayfa başına kayıt:"
-            labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
-          />
-        </>
-      )}
-    </Box>
+    </>
   );
 };
 

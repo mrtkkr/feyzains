@@ -199,7 +199,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
   const fetchSearchs = useCallback(
     async ({
       page = 0,
-      pageSize = 10,
+      pageSize = 15,
       order_by = 'date',
       order = 'desc',
       worksite = '',
