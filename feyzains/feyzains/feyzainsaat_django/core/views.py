@@ -377,12 +377,30 @@ class ChecklistView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
 
+class SearchPagination(PageNumberPagination):
+    page_size = 10
 
 class SearchPagelistView(APIView):
     def get(self, request):
-        searchPage = PaymenInvoice.objects.all().order_by('-id')
-        serializer = PaymenInvoiceReadSerializer(searchPage, many=True)
-        return Response(serializer.data)
+        # Parametreleri al
+        order_by = request.query_params.get('order_by', 'search_time')
+        order = request.query_params.get('order', 'desc')
+
+        # Tüm veriyi al
+        queryset = PaymenInvoice.objects.all()
+
+        # Sıralama uygula
+        if order == 'desc':
+            queryset = queryset.order_by(f'-{order_by}')
+        else:
+            queryset = queryset.order_by(order_by)
+
+        # Sayfalama işlemi
+        paginator = SearchPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = PaymenInvoiceReadSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
         serializer = PaymenInvoiceSerializer(data=request.data, context={'request': request})

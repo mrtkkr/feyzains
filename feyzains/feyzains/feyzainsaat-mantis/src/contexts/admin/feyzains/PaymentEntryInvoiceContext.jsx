@@ -184,19 +184,24 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
     []
   );
 
-  const fetchSearchs = useCallback(async (forceRefresh = false) => {
-    if (dataLoaded.current && !forceRefresh) {
-      return;
-    }
+  const fetchSearchs = useCallback(async ({ page = 0, pageSize = 10, orderBy = 'search_time', order = 'desc' }) => {
     setLoading(true);
     setError(null);
     try {
+      const queryParams = {
+        page: page + 1, // Django'da sayfalar 1-indexli
+        page_size: pageSize,
+        order_by: orderBy,
+        order: order
+      };
       // Müşteriler
-      const res = await sendApiRequest({ url: baseUrl + searchListUrl, method: 'GET' });
+      const res = await sendApiRequest({ url: baseUrl + searchListUrl, method: 'GET', queryParams });
       // Başarıyla gelen yanıtı logla
       console.log('API Response:', res);
       if (res.response.status === 200) {
-        setSearchs(res.data || []);
+        setSearchs(res.data.results || []);
+        setCount(res.data.count || 0); // toplam kayıt sayısı
+        setPaymentEntryInvoices(res.data || []);
       } else {
         setError('Arama sayfası alınırken bir hata oluştu.');
         console.error('Failed to fetch supplier checkLists:', res.response);
@@ -313,6 +318,32 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
     }
   };
 
+  const updateSearch = async (id, data) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await sendApiRequest({
+        url: `${baseUrl}${searchDetailUrl}${id}/`,
+        method: 'PUT',
+        body: data
+      });
+      if (res.response.status === 200) {
+        // Update the payment in the local state to avoid refetching
+        setSearchs((prev) => prev.map((searchs) => (searchs.id === id ? res.data : searchs)));
+        return { success: true, data: res.data };
+      } else {
+        setError('Arama güncellenemedi.');
+        return { success: false, error: 'Fatura güncellenemedi.' };
+      }
+    } catch (err) {
+      console.error('updateSearch error:', err);
+      setError('Arama güncellenirken hata oluştu.');
+      return { success: false, error: 'Arama güncellenirken hata oluştu.' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteInvoice = async (id) => {
     setLoading(true);
     setError(null);
@@ -362,6 +393,33 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
       console.error('deletePaymentEntry error:', err);
       setError('Ödeme silinirken hata oluştu.');
       return { success: false, error: 'Ödeme silinirken hata oluştu.' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteSearch = async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await sendApiRequest({
+        url: `${baseUrl}${searchDetailUrl}${id}/`,
+        method: 'DELETE'
+      });
+
+      // Eğer res.response varsa ve status 204 ise işlem başarılı
+      if (res?.response?.status === 204) {
+        setSearchs((prev) => prev.filter((searchs) => searchs.id !== id));
+        return { success: true };
+      } else {
+        const errorMessage = res?.response?.data?.detail || 'Arama silinemedi.';
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      }
+    } catch (err) {
+      console.error('deleteSearch error:', err);
+      setError('Arama silinirken hata oluştu.');
+      return { success: false, error: 'Arama silinirken hata oluştu.' };
     } finally {
       setLoading(false);
     }
@@ -424,6 +482,37 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
       console.error('getPaymentEntryById error:', err);
       setError('Ödeme bilgileri alınırken hata oluştu.');
       return { success: false, error: 'Ödeme bilgileri alınırken hata oluştu.' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSearchById = async (id) => {
+    // First check if we have the payment in local state
+    const localPaymentEntryInvoicet = searchs.find((paymentEntryInvoices) => paymentEntryInvoices.id === id);
+    if (localPaymentEntryInvoicet) {
+      return { success: true, data: localPaymentEntryInvoicet };
+    }
+
+    // If not found in local state, fetch from API
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await sendApiRequest({
+        url: `${baseUrl}${searchDetailUrl}${id}/`,
+        method: 'GET'
+      });
+
+      if (res.response.status === 200) {
+        return { success: true, data: res.data };
+      } else {
+        setError('Arama bulunamadı.');
+        return { success: false, error: 'Arama bulunamadı.' };
+      }
+    } catch (err) {
+      console.error('getSearchById error:', err);
+      setError('Arama bilgileri alınırken hata oluştu.');
+      return { success: false, error: 'Arama bilgileri alınırken hata oluştu.' };
     } finally {
       setLoading(false);
     }
@@ -494,10 +583,13 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
         createPaymentEntry,
         updateInvoice,
         updatePaymentEntry,
+        updateSearch,
+        deleteSearch,
         deleteInvoice,
         deletePaymentEntry,
         getInvoiceById,
-        getPaymentEntryById
+        getPaymentEntryById,
+        getSearchById
       }}
     >
       {children}

@@ -30,10 +30,17 @@ import SearchIcon from '@mui/icons-material/Search';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // PDF ikonu ekle
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
+import { CompanyContext } from '../../../../contexts/admin/feyzains/CompanyContext';
+import { WorksiteContext } from '../../../../contexts/admin/feyzains/WorksiteContext';
+import { GroupContext } from '../../../../contexts/admin/feyzains/GroupContext';
+import { CustomerContext } from '../../../../contexts/admin/feyzains/CustomerContext';
 import axios from 'axios';
 import { PUBLIC_URL } from '../../../../services/network_service';
-// import jsPDF from 'jspdf'; // jsPDF kütüphanesini import et
-// import 'jspdf-autotable'; // jsPDF-AutoTable eklentisini import et
+import jsPDF from 'jspdf'; // jsPDF kütüphanesini import et
+import 'jspdf-autotable'; // jsPDF-AutoTable eklentisini import et
+import robotoBase64 from '../fonts/roboto-base64';
+import EditSearch from './EditSearch';
+import ViewSearch from './ViewSearch';
 import { AuthContext } from 'contexts/auth/AuthContext';
 import * as XLSX from 'xlsx';
 
@@ -67,17 +74,27 @@ function getComparator(order, orderBy) {
 
 const SearchPage = () => {
   // Context
-  const { searchs, loading, error, fetchSearchs } = useContext(PaymentEntryInvoiceContext);
+  const { searchs, count, loading, error, fetchSearchs, deleteSearch } = useContext(PaymentEntryInvoiceContext);
   const { fetchUser } = useContext(AuthContext);
+  const { fetchCompanies, companies } = useContext(CompanyContext);
+  const { fetchWorksites, worksites } = useContext(WorksiteContext);
+  const { fetchGroups, groups } = useContext(GroupContext);
+  const { fetchCustomers, customers } = useContext(CustomerContext);
 
   // States
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [isEditSearchDialogOpen, setIsEditSearchDialogOpen] = useState(false);
+
+  const [isViewSearchDialogOpen, setIsViewSearchDialogOpen] = useState(false);
 
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedSearchId, setSelectedSearchId] = useState(null);
+
   const [searchQuery3, setSearchQuery3] = useState('');
+
   const [isLoading, setIsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchCount, setSearchCount] = useState(0);
@@ -85,8 +102,6 @@ const SearchPage = () => {
 
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
   useEffect(() => {
-    fetchSearchs();
-
     // Kullanıcı bilgilerini al
     const initializeUser = async () => {
       try {
@@ -102,14 +117,23 @@ const SearchPage = () => {
     };
 
     initializeUser();
-  }, [fetchSearchs]); // fetchPayments'i bağımlılık olarak ekleyin
+  }, []); // fetchPayments'i bağımlılık olarak ekleyin
 
-  // Fatura sayısını güncelleme
   useEffect(() => {
-    if (searchs) {
-      setSearchCount(searchs.length);
-    }
-  }, [searchs]);
+    fetchSearchs({
+      page: page,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order
+    });
+  }, [page, rowsPerPage, orderBy, order]);
+
+  useEffect(() => {
+    fetchCompanies();
+    fetchWorksites();
+    fetchGroups();
+    fetchCustomers();
+  }, []);
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -118,6 +142,7 @@ const SearchPage = () => {
   };
 
   const handleChangePage = (event, newPage) => {
+    console.log('newPage', newPage);
     setPage(newPage);
   };
 
@@ -126,21 +151,64 @@ const SearchPage = () => {
     setPage(0);
   };
 
+  const handleEditSearchClick = (id) => {
+    setSelectedSearchId(id);
+    setIsEditSearchDialogOpen(true);
+  };
+
+  const handleViewSearchClick = (id) => {
+    setSelectedSearchId(id);
+    setIsViewSearchDialogOpen(true);
+  };
+
+  const handleCloseViewDialog = () => {
+    setIsViewSearchDialogOpen(false);
+    setSelectedSearchId(null);
+  };
+  const handleCloseEditDialog = () => {
+    setIsEditSearchDialogOpen(false);
+    setSelectedSearchId(null);
+  };
+
+  const handleDeleteSearch = async (id) => {
+    if (window.confirm('Bu Arama kaydını silmek istediğinizden emin misiniz?')) {
+      try {
+        const response = await deleteSearch(id);
+        if (response && response.success) {
+          toast.success('Arama kaydı başarıyla silindi');
+          fetchSearchs({
+            page: page,
+            pageSize: rowsPerPage,
+            orderBy: orderBy,
+            order: order
+          });
+        } else {
+          toast.error(response?.error || 'Arama kaydı silinemedi');
+        }
+      } catch (error) {
+        console.error('Silme işlemi sırasında hata:', error);
+        toast.error('Silme işlemi başarısız');
+      }
+    }
+  };
+
   // Dosya seçildiğinde state'e kaydet
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
   };
 
-  const refreshData = useCallback(() => {
-    fetchSearchs(true); // Force refresh
-  }, [fetchSearchs]);
-
-  // Use the refresh trigger to control when to refresh data
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      refreshData();
-    }
-  }, [refreshTrigger, refreshData]);
+  // const handleFilter = () => {
+  //   fetchSearchs({
+  //     page: page,
+  //     pageSize: rowsPerPage,
+  //     orderBy: orderBy,
+  //     order: order,
+  //     worksite: searchQuery1,
+  //     group: searchQuery2,
+  //     company: searchQuery3,
+  //     customer: searchQuery4
+  //   });
+  // };
 
   const importFromExcel = async () => {
     if (!selectedFile) {
@@ -373,53 +441,30 @@ const SearchPage = () => {
   //   }
   // };
 
-  const filteredSearchs = useMemo(() => {
-    if (!searchs) return [];
-
-    const searchLower = (searchQuery3 || '').toLowerCase();
-
-    return searchs.filter((paymentEntryInvoice) => {
-      const worksiteName = paymentEntryInvoice?.worksite?.name?.toLowerCase() || '';
-      const groupName = paymentEntryInvoice?.group?.name?.toLowerCase() || '';
-      const companyName = paymentEntryInvoice?.company?.name?.toLowerCase() || '';
-      const customerName = paymentEntryInvoice?.customer?.name?.toLowerCase() || '';
-      const bank = (paymentEntryInvoice?.bank || '').toLowerCase();
-      const material = (paymentEntryInvoice?.material || '').toLowerCase();
-      const quantity = paymentEntryInvoice?.quantity?.toString() || '';
-      const unitPrice = paymentEntryInvoice?.unit_price?.toString() || '';
-      const price = paymentEntryInvoice?.price?.toString() || '';
-      const tax = paymentEntryInvoice?.tax?.toString() || '';
-      const withholding = paymentEntryInvoice?.withholding?.toString() || '';
-      const receivable = paymentEntryInvoice?.receivable?.toString() || '';
-      const debt = paymentEntryInvoice?.debt?.toString() || '';
-      const createdBy = paymentEntryInvoice?.created_by?.username?.toLowerCase() || '';
-      const date = paymentEntryInvoice?.date || '';
-
-      return (
-        worksiteName.includes(searchLower) ||
-        groupName.includes(searchLower) ||
-        companyName.includes(searchLower) ||
-        customerName.includes(searchLower) ||
-        bank.includes(searchLower) ||
-        material.includes(searchLower) ||
-        quantity.includes(searchLower) ||
-        unitPrice.includes(searchLower) ||
-        price.includes(searchLower) ||
-        tax.includes(searchLower) ||
-        withholding.includes(searchLower) ||
-        receivable.includes(searchLower) ||
-        debt.includes(searchLower) ||
-        createdBy.includes(searchLower) ||
-        date.includes(searchLower)
-      );
-    });
-  }, [searchs, searchQuery3]);
+  // IMPORTANT: Using memoized props to pass to child components
 
   const visibleSearchRows = useMemo(() => {
-    return filteredSearchs.sort(getComparator(order, orderBy)).slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-  }, [filteredSearchs, order, orderBy, page, rowsPerPage]);
+    return searchs.sort(getComparator(order, orderBy));
+  }, [searchs, order, orderBy]);
 
   // IMPORTANT: Using memoized props to pass to child components
+  const viewSearchProps = useMemo(
+    () => ({
+      open: isViewSearchDialogOpen,
+      onClose: handleCloseViewDialog,
+      searchId: selectedSearchId
+    }),
+    [isViewSearchDialogOpen, selectedSearchId]
+  );
+
+  const editSearchProps = useMemo(
+    () => ({
+      open: isEditSearchDialogOpen,
+      onClose: handleCloseEditDialog,
+      searchId: selectedSearchId
+    }),
+    [isEditSearchDialogOpen, selectedSearchId]
+  );
 
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
@@ -461,6 +506,10 @@ const SearchPage = () => {
         </Box>
       ) : (
         <>
+          {isEditSearchDialogOpen && selectedSearchId && <EditSearch {...editSearchProps} />}
+
+          {isViewSearchDialogOpen && selectedSearchId && <ViewSearch {...viewSearchProps} />}
+
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
@@ -481,6 +530,7 @@ const SearchPage = () => {
                   <TableCell>Tevkifat</TableCell>
                   <TableCell>Alacak</TableCell>
                   <TableCell>Borç</TableCell>
+                  <TableCell align="right">İşlemler</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -503,6 +553,27 @@ const SearchPage = () => {
                       <TableCell>{searchs.withholding || '-'}</TableCell>
                       <TableCell>{formatNumber(searchs.receivable) || '-'}</TableCell>
                       <TableCell>{formatNumber(searchs.debt) || '-'}</TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Detay">
+                          <IconButton onClick={() => handleViewSearchClick(searchs.id)}>
+                            <VisibilityIcon />
+                          </IconButton>
+                        </Tooltip>
+                        {isAdmin && (
+                          <>
+                            <Tooltip title="Düzenle">
+                              <IconButton onClick={() => handleEditSearchClick(searchs.id)}>
+                                <EditIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Sil">
+                              <IconButton onClick={() => handleDeleteSearch(searchs.id)}>
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
@@ -520,7 +591,7 @@ const SearchPage = () => {
           <TablePagination
             rowsPerPageOptions={[10, 25, 50]}
             component="div"
-            count={filteredSearchs.length}
+            count={count}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
