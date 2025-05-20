@@ -88,6 +88,12 @@ const CheckListPage = () => {
   const [orderBy, setOrderBy] = useState('check_time');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [checklistFilters, setChecklistFilters] = useState({
+    startDate: null,
+    endDate: null,
+    company: '',
+    customer: ''
+  });
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [searchQuery4, setSearchQuery4] = useState('');
@@ -122,9 +128,10 @@ const CheckListPage = () => {
       page: page,
       pageSize: rowsPerPage,
       orderBy: orderBy,
-      order: order
+      order: order,
+      ...checklistFilters
     });
-  }, [page, rowsPerPage, orderBy, order]);
+  }, [page, rowsPerPage, orderBy, order, checklistFilters]);
 
   useEffect(() => {
     fetchCompanies();
@@ -194,16 +201,16 @@ const CheckListPage = () => {
   const handleFilter = () => {
     const formattedStart = startDate?.toISOString().split('T')[0];
     const formattedEnd = endDate?.toISOString().split('T')[0];
-    fetchChecklists({
+
+    const newFilters = {
       startDate: formattedStart,
       endDate: formattedEnd,
-      page: page,
-      pageSize: rowsPerPage,
-      orderBy: orderBy,
-      order: order,
       company: companySearch,
       customer: customerSearch
-    });
+    };
+
+    setChecklistFilters(newFilters); // Sadece filtreleri güncelle
+    setPage(0); // Sayfayı sıfırla
   };
 
   const exportToExcel = async () => {

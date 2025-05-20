@@ -111,11 +111,30 @@ const SearchPage = () => {
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
+  const [searchFilters, setSearchFilters] = useState({
+    startDate: null,
+    endDate: null,
+    worksite: '',
+    group: '',
+    company: '',
+    customer: '',
+    bank: '',
+    check_no: '',
+    material: '',
+    quantity: '',
+    unit_price: '',
+    price: '',
+    tax: '',
+    withholding: '',
+    receivable: '',
+    debt: ''
+  });
+
   // States
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('date');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(15);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isEditSearchDialogOpen, setIsEditSearchDialogOpen] = useState(false);
 
   const [isViewSearchDialogOpen, setIsViewSearchDialogOpen] = useState(false);
@@ -154,9 +173,10 @@ const SearchPage = () => {
       page: page,
       pageSize: rowsPerPage,
       orderBy: orderBy,
-      order: order
+      order: order,
+      ...searchFilters
     });
-  }, [page, rowsPerPage, orderBy, order]);
+  }, [page, rowsPerPage, orderBy, order, searchFilters]);
 
   useEffect(() => {
     fetchCompanies();
@@ -177,7 +197,7 @@ const SearchPage = () => {
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 15));
+    setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
 
@@ -228,19 +248,16 @@ const SearchPage = () => {
   };
 
   const handleFilter = () => {
-    const formattedStart = formatDateLocal(startDate);
-    const formattedEnd = formatDateLocal(endDate);
-    fetchSearchs({
-      page: page,
-      pageSize: rowsPerPage,
-      orderBy: orderBy,
-      order: order,
+    const formattedStart = startDate?.toISOString().split('T')[0];
+    const formattedEnd = endDate?.toISOString().split('T')[0];
+
+    const newFilters = {
+      startDate: formattedStart,
+      endDate: formattedEnd,
       worksite: searchWorsite,
       group: searchGroup,
       company: searchCompany,
       customer: searchCustomer,
-      startDate: formattedStart,
-      endDate: formattedEnd,
       bank: searchBank,
       check_no: searchCheckNo,
       material: searchMaterial,
@@ -251,7 +268,10 @@ const SearchPage = () => {
       withholding: searchWithholding,
       receivable: searchReceivable,
       debt: searchDebt
-    });
+    };
+
+    setSearchFilters(newFilters); // filtreleri güncelle
+    setPage(0); // sayfayı sıfırla
   };
 
   const importFromExcel = async () => {
@@ -435,7 +455,7 @@ const SearchPage = () => {
       ]);
 
       let currentY = 30;
-      const cellHeight = 9;
+      const cellHeight = 12;
 
       // ÖNEMLİ: Font kodlamasını UTF-8 olarak ayarla
       doc.setFont('Roboto', 'normal');
@@ -565,7 +585,7 @@ const SearchPage = () => {
   return (
     <>
       <Box display="flex">
-        <Box sx={{ flexGrow: 1, p: 3, width: '85%' }}>
+        <Box sx={{ flexGrow: 1, p: 3, width: '87%' }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
             <Typography variant="h5" component="h1">
               Arama Kayıtları
@@ -579,7 +599,6 @@ const SearchPage = () => {
               </Button>
             </Box>
           </Box>
-
           {loading ? (
             <Box display="flex" justifyContent="center" my={4}>
               <CircularProgress />
@@ -673,7 +692,7 @@ const SearchPage = () => {
                 </Table>
               </TableContainer>
               <TablePagination
-                rowsPerPageOptions={[15, 30, 90]}
+                rowsPerPageOptions={[10, 25, 50]}
                 component="div"
                 count={count}
                 rowsPerPage={rowsPerPage}
@@ -686,7 +705,7 @@ const SearchPage = () => {
             </>
           )}
         </Box>
-        <Box sx={{ width: '15%' }}>
+        <Box sx={{ width: '13%' }}>
           <Paper elevation={3} sx={{ p: 3, borderRadius: 2, mb: 4 }}>
             <Typography
               variant="h5"
@@ -703,7 +722,7 @@ const SearchPage = () => {
 
             <Box display="flex" justifyContent="space-between" flexWrap="wrap" gap={2}>
               {/* Sol taraf: Filtre alanları */}
-              <Box display="flex" flexWrap="wrap" gap={8}>
+              <Box display="flex" flexWrap="wrap" gap={2}>
                 <Box display="flex" flexDirection="column" minWidth={200} gap={1}>
                   <Typography variant="subtitle2">Şantiye</Typography>
                   <TextField

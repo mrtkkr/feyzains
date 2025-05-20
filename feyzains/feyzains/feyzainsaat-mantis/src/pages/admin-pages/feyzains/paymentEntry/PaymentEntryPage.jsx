@@ -103,6 +103,13 @@ const PaymentEntryPage = () => {
   const [paymentCount, setPaymentCount] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  const [filters, setFilters] = useState({
+    worksite: '',
+    group: '',
+    company: '',
+    customer: ''
+  });
+
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
   useEffect(() => {
     // Kullanıcı bilgilerini al
@@ -124,13 +131,13 @@ const PaymentEntryPage = () => {
 
   useEffect(() => {
     fetchPaymentEntry({
-      type: 'payment',
       page: page,
       pageSize: rowsPerPage,
       orderBy: orderBy,
-      order: order
+      order: order,
+      ...filters // filtreleri ekledik
     });
-  }, [page, rowsPerPage, orderBy, order]);
+  }, [page, rowsPerPage, orderBy, order, filters]); // filters'ı da bağımlılıklara ekle
 
   useEffect(() => {
     fetchCompanies();
@@ -241,16 +248,24 @@ const PaymentEntryPage = () => {
   };
 
   const handleFilter = () => {
-    fetchPaymentEntry({
-      page: page,
-      pageSize: rowsPerPage,
-      orderBy: orderBy,
-      order: order,
+    const newFilters = {
       worksite: searchQuery5,
       group: searchQuery6,
       company: searchQuery7,
       customer: searchQuery8
+    };
+
+    setFilters(newFilters); // filtreleri sakla
+
+    fetchPaymentEntry({
+      page: 0,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order,
+      ...newFilters
     });
+
+    setPage(0); // sayfayı sıfırla
   };
 
   const importFromExcel = async () => {

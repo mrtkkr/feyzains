@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from django.utils.timezone import make_aware
+from urllib.parse import urlencode, parse_qs, urlparse, urlunparse
 
 
 
@@ -378,7 +379,7 @@ class ChecklistView(APIView):
 
 
 class SearchPagination(PageNumberPagination):
-    page_size = 15
+    page_size = 10
 
 class SearchPagelistView(APIView):
     def get(self, request):
@@ -539,24 +540,42 @@ class SearchPageDetailView(APIView):
 
         # return paginator.get_paginated_response(serialized.data)
 
-
 class PaymentPagination(PageNumberPagination):
     page_size = 10
+    page_size_query_param = 'pageSize'
+
+    def get_paginated_response(self, data):
+        request = self.request
+
+        # Orijinal query string'ten parametreleri al
+        query_dict = dict(parse_qs(request.META.get('QUERY_STRING', '')))
+        query_dict.pop(self.page_query_param, None)  # önceki page parametresini çıkar
+
+        def build_url(page_number):
+            query_dict[self.page_query_param] = [str(page_number)]
+            new_query = urlencode(query_dict, doseq=True)
+            return f"{request.build_absolute_uri(request.path)}?{new_query}"
+
+        return Response({
+            'count': self.page.paginator.count,
+            'next': build_url(self.page.next_page_number()) if self.page.has_next() else None,
+            'previous': build_url(self.page.previous_page_number()) if self.page.has_previous() else None,
+            'results': data
+        })   
 
 class PaymentEntryView(APIView):
     def get(self, request): 
         # Parametreleri al
-        entry_type = request.query_params.get('type', 'invoice')  # Varsayılan: 'invoice'
-        order_by = request.query_params.get('order_by', 'date')  # payment_time yerine 'date'
-        order = request.query_params.get('order', 'desc')  # Varsayılan: 'desc'
+        entry_type = request.query_params.get('type', 'invoice')
+        order_by = request.query_params.get('order_by', 'date')
+        order = request.query_params.get('order', 'desc')
         worksite = request.query_params.get('worksite', '')
         group = request.query_params.get('group', '')
         company = request.query_params.get('company', '')
         customer = request.query_params.get('customer', '')
 
-        # Sorgu filtresini hazırla
+        # Filtre
         filters = Q()
-
         if entry_type:
             filters &= Q(type=entry_type)
         if company:
@@ -568,22 +587,21 @@ class PaymentEntryView(APIView):
         if customer:
             filters &= Q(customer__name__icontains=customer)
 
-        # Filtreyi uygula
         payments = PaymenInvoice.objects.filter(filters)
 
-        # Sıralama uygula
+        # Sıralama
         if order == 'desc':
             payments = payments.order_by(f'-{order_by}')
         else:
             payments = payments.order_by(order_by)
 
-        # Sayfalama ve serializer
+        # Sayfalama
         paginator = PaymentPagination()
+        paginator.request = request  # <-- BU SATIR ÖNEMLİ!
         result_page = paginator.paginate_queryset(payments, request)
-        serializer = PaymenInvoiceReadSerializer(result_page, many=True)
 
+        serializer = PaymenInvoiceReadSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
-    
 
 
 class PaymentEntryDetailView(APIView):

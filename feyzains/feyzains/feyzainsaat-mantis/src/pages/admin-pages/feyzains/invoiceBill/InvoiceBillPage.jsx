@@ -103,6 +103,13 @@ const InvoiceBillPage = () => {
   const [invoiceCount, setInvoiceCount] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  const [filters, setFilters] = useState({
+    worksite: '',
+    group: '',
+    company: '',
+    customer: ''
+  });
+
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
   useEffect(() => {
     // Kullanıcı bilgilerini al
@@ -128,10 +135,10 @@ const InvoiceBillPage = () => {
       page: page,
       pageSize: rowsPerPage,
       orderBy: orderBy,
-      order: order
+      order: order,
+      ...filters // filtreleri ekledik
     });
-  }, [page, rowsPerPage, orderBy, order]);
-  // Fatura sayısını güncelleme
+  }, [page, rowsPerPage, orderBy, order, filters]); // filters'ı da bağımlılıklara ekle
 
   useEffect(() => {
     fetchCompanies();
@@ -240,16 +247,23 @@ const InvoiceBillPage = () => {
   };
 
   const handleFilter = () => {
-    fetchInvoice({
-      page: page,
-      pageSize: rowsPerPage,
-      orderBy: orderBy,
-      order: order,
+    const newFilters = {
       worksite: searchQuery1,
       group: searchQuery2,
       company: searchQuery3,
       customer: searchQuery4
+    };
+
+    setFilters(newFilters); // filtreleri sakla
+    fetchInvoice({
+      page: 0,
+      pageSize: rowsPerPage,
+      orderBy: orderBy,
+      order: order,
+      ...newFilters
     });
+
+    setPage(0); // sayfayı sıfırla
   };
 
   // Use the refresh trigger to control when to refresh data

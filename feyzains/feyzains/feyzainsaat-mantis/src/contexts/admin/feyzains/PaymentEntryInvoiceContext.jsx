@@ -9,6 +9,39 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
   const [payments, setPayments] = useState([]);
   const [invoices, setInvoices] = useState([]);
 
+  const [filters, setFilters] = useState({
+    worksite: '',
+    group: '',
+    company: '',
+    customer: ''
+  });
+
+  const [checklistFilters, setChecklistFilters] = useState({
+    startDate: null,
+    endDate: null,
+    company: '',
+    customer: ''
+  });
+
+  const [searchFilters, setSearchFilters] = useState({
+    startDate: null,
+    endDate: null,
+    worksite: '',
+    group: '',
+    company: '',
+    customer: '',
+    bank: '',
+    check_no: '',
+    material: '',
+    quantity: '',
+    unit_price: '',
+    price: '',
+    tax: '',
+    withholding: '',
+    receivable: '',
+    debt: ''
+  });
+
   const [loading, setLoading] = useState(false);
   const [checklists, setChecklists] = useState([]);
   const [count, setCount] = useState(0); // toplam kayıt sayısı
@@ -51,16 +84,17 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
       pageSize = 10,
       orderBy = 'invoice_time',
       order = 'desc',
-      worksite = '',
-      group = '',
-      company = '',
-      customer = ''
+      worksite = filters.worksite,
+      group = filters.group,
+      company = filters.company,
+      customer = filters.customer
     } = {}) => {
       setLoading(true);
       setError(null);
 
       try {
         const queryParams = {
+          type: type,
           page: page + 1, // Django'da sayfalar 1-indexli
           page_size: pageSize,
           order_by: orderBy,
@@ -91,7 +125,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
         setLoading(false);
       }
     },
-    []
+    [filters] // 🔁 filters artık bağımlılıkta
   );
 
   const fetchPaymentEntry = useCallback(
@@ -101,18 +135,17 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
       pageSize = 10,
       orderBy = 'payment_time',
       order = 'desc',
-      worksite = '',
-      group = '',
-      company = '',
-      customer = ''
-    }) => {
-      // Skip fetching if data is already loaded and forceRefresh is false
+      worksite = filters.worksite,
+      group = filters.group,
+      company = filters.company,
+      customer = filters.customer
+    } = {}) => {
       setLoading(true);
       setError(null);
       try {
         const queryParams = {
-          type: type, // Add the type parameter to the request
-          page: page + 1, // Django'da sayfalar 1-indexli
+          type: type,
+          page: page + 1,
           pageSize: pageSize,
           order_by: orderBy,
           order: order
@@ -131,38 +164,38 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
 
         if (res.response.status === 200) {
           setPayments(res.data.results || []);
-          setCount(res.data.count || 0); // toplam kayıt sayısı
+          setCount(res.data.count || 0);
           setPaymentEntryInvoices(res.data || []);
         } else {
           setError('Ödeme Girişi veya Faturalar alınırken bir hata oluştu.');
         }
       } catch (error) {
-        console.error('fetchPaymentEntryInvoices error:', error);
+        console.error('fetchPaymentEntry error:', error);
         setError('API çağrısı başarısız oldu.');
       } finally {
         setLoading(false);
       }
     },
-    []
+    [filters] // 🔁 filters artık bağımlılıkta
   );
 
   const fetchChecklists = useCallback(
     async ({
-      startDate = null,
-      endDate = null,
+      startDate = checklistFilters.startDate,
+      endDate = checklistFilters.endDate,
       page = 0,
       pageSize = 10,
       orderBy = 'check_time',
       order = 'desc',
-      company = '',
-      customer = ''
+      company = checklistFilters.company,
+      customer = checklistFilters.customer
     } = {}) => {
       setLoading(true);
       setError(null);
 
       try {
         const queryParams = {
-          page: page + 1, // Django'da sayfalar 1-indexli
+          page: page + 1,
           page_size: pageSize,
           order_by: orderBy,
           order: order
@@ -181,7 +214,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
 
         if (res.response.status === 200) {
           setChecklists(res.data.results || []);
-          setCount(res.data.count || 0); // toplam kayıt sayısı
+          setCount(res.data.count || 0);
           dataLoaded.current = true;
         } else {
           setError('Çek Listesi alınırken bir hata oluştu.');
@@ -193,48 +226,42 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
         setLoading(false);
       }
     },
-    []
+    [checklistFilters] // ✅ bağımlılık eklendi
   );
 
   const fetchSearchs = useCallback(
     async ({
       page = 0,
-      pageSize = 15,
+      pageSize = 10,
       order_by = 'date',
       order = 'desc',
-      worksite = '',
-      group = '',
-      company = '',
-      customer = '',
-      startDate = null,
-      endDate = null,
-      bank = '',
-      check_no = '',
-      material = '',
-      quantity = '',
-      unit_price = '',
-      price = '',
-      tax = '',
-      withholding = '',
-      receivable = '',
-      debt = ''
+      startDate = searchFilters.startDate,
+      endDate = searchFilters.endDate,
+      worksite = searchFilters.worksite,
+      group = searchFilters.group,
+      company = searchFilters.company,
+      customer = searchFilters.customer,
+      bank = searchFilters.bank,
+      check_no = searchFilters.check_no,
+      material = searchFilters.material,
+      quantity = searchFilters.quantity,
+      unit_price = searchFilters.unit_price,
+      price = searchFilters.price,
+      tax = searchFilters.tax,
+      withholding = searchFilters.withholding,
+      receivable = searchFilters.receivable,
+      debt = searchFilters.debt
     }) => {
       setLoading(true);
       setError(null);
       try {
         const queryParams = {
-          page: page + 1, // Django'da sayfalar 1-indexli
+          page: page + 1,
           page_size: pageSize,
           order_by: order_by,
           order: order
         };
-        // Log the date parameters specifically for debugging
-        console.log('Date parameters to be sent:', {
-          startDate,
-          endDate
-        });
 
-        // Sadece dolu olanları ekle
         if (startDate) queryParams.start_date = formatDate2(startDate);
         if (endDate) queryParams.end_date = formatDate2(endDate);
         if (worksite) queryParams.worksite = worksite;
@@ -252,26 +279,27 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
         if (receivable) queryParams.receivable = receivable;
         if (debt) queryParams.debt = debt;
 
-        // Müşteriler
-        const res = await sendApiRequest({ url: baseUrl + searchListUrl, method: 'GET', queryParams });
-        // Başarıyla gelen yanıtı logla
-        console.log('API Response:', res);
+        const res = await sendApiRequest({
+          url: baseUrl + searchListUrl,
+          method: 'GET',
+          queryParams
+        });
+
         if (res.response.status === 200) {
           setSearchs(res.data.results || []);
-          setCount(res.data.count || 0); // toplam kayıt sayısı
+          setCount(res.data.count || 0);
           setPaymentEntryInvoices(res.data || []);
         } else {
           setError('Arama sayfası alınırken bir hata oluştu.');
-          console.error('Failed to fetch supplier checkLists:', res.response);
         }
       } catch (error) {
+        console.error('API error:', error);
         setError('API çağrısı başarısız oldu.');
-        console.error('Failed to fetch checkList:', error);
       } finally {
         setLoading(false);
       }
     },
-    []
+    [searchFilters]
   );
 
   const createInvoice = async (data) => {
