@@ -568,7 +568,7 @@ class PaymentEntryView(APIView):
         # Parametreleri al
         entry_type = request.query_params.get('type', 'invoice')
         order_by = request.query_params.get('order_by', 'date')
-        order = request.query_params.get('order', 'desc')
+        order = request.query_params.get('order', 'asc')
         worksite = request.query_params.get('worksite', '')
         group = request.query_params.get('group', '')
         company = request.query_params.get('company', '')
@@ -590,7 +590,7 @@ class PaymentEntryView(APIView):
         payments = PaymenInvoice.objects.filter(filters)
 
         # Sıralama
-        if order == 'desc':
+        if order == 'asc':
             payments = payments.order_by(f'-{order_by}')
         else:
             payments = payments.order_by(order_by)
@@ -602,6 +602,13 @@ class PaymentEntryView(APIView):
 
         serializer = PaymenInvoiceReadSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
+    
+    def post(self, request):
+        serializer = PaymenInvoiceSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(created_by=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PaymentEntryDetailView(APIView):
@@ -613,11 +620,14 @@ class PaymentEntryDetailView(APIView):
     def put(self, request, pk):
         payment_entry = get_object_or_404(PaymenInvoice, pk=pk)
         serializer = PaymenInvoiceSerializer(payment_entry, data=request.data)
+        
         if serializer.is_valid():
             serializer.save()
             read_serializer = PaymenInvoiceReadSerializer(payment_entry)
             return Response(read_serializer.data)
-        return Response(read_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Hatalı olan satır düzeltildi:
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
         payment_entry = get_object_or_404(PaymenInvoice, pk=pk)
@@ -633,7 +643,7 @@ class InvoiceView(APIView):
         # Parametreleri al
         entry_type = request.query_params.get('type', 'invoice')  # Varsayılan: 'invoice'
         order_by = request.query_params.get('order_by', 'date')  # Varsayılan: 'date'
-        order = request.query_params.get('order', 'desc')  # Varsayılan: 'desc'
+        order = request.query_params.get('order', 'asc')  # Varsayılan: 'desc'
         worksite = request.query_params.get('worksite', '')
         group = request.query_params.get('group', '')
         company = request.query_params.get('company', '')
@@ -660,7 +670,7 @@ class InvoiceView(APIView):
         invoices = PaymenInvoice.objects.filter(filters)
 
         # Sıralama uygula
-        if order == 'desc':
+        if order == 'asc':
             invoices = invoices.order_by(f'-{order_by}')
         else:
             invoices = invoices.order_by(order_by)

@@ -10,6 +10,10 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   TableHead,
   TableRow,
   TablePagination,
@@ -110,6 +114,8 @@ const SearchPage = () => {
   const [searchDebt, setSearchDebt] = useState('');
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('');
 
   const [searchFilters, setSearchFilters] = useState({
     startDate: null,
@@ -272,6 +278,32 @@ const SearchPage = () => {
 
     setSearchFilters(newFilters); // filtreleri güncelle
     setPage(0); // sayfayı sıfırla
+  };
+  const handleHideClick = () => {
+    const formattedStart = startDate?.toISOString().split('T')[0];
+    const formattedEnd = endDate?.toISOString().split('T')[0];
+
+    const newFilters = {
+      startDate: formattedStart,
+      endDate: formattedEnd,
+      worksite: searchWorsite,
+      group: searchGroup,
+      company: searchCompany || selectedCompany, // Öncelik manuel girilende, yoksa seçilende
+      customer: searchCustomer || selectedCustomer,
+      bank: searchBank,
+      check_no: searchCheckNo,
+      material: searchMaterial,
+      quantity: searchQuantity,
+      unit_price: searchUnitPrice,
+      price: searchPrice,
+      tax: searchTax,
+      withholding: searchWithholding,
+      receivable: searchReceivable,
+      debt: searchDebt
+    };
+
+    setSearchFilters(newFilters);
+    setPage(0); // Sayfayı sıfırla
   };
 
   const importFromExcel = async () => {
@@ -586,19 +618,84 @@ const SearchPage = () => {
     <>
       <Box display="flex">
         <Box sx={{ flexGrow: 1, p: 3, width: '87%' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h5" component="h1">
+          {/* burda selectedCompany && de olmalı */}
+          {selectedCompany && (
+            <Box mb={2} p={2} borderRadius={2}>
+              <Typography
+                sx={{
+                  fontSize: '1.75rem', // Daha büyük font
+                  fontWeight: 'bold', // Kalın yazı
+                  color: '#1565c0',
+                  letterSpacing: '0.1rem', // Harfler arası mesafe
+                  mb: 0.5
+                }}
+              >
+                <span style={{ color: '#0d47a1' }}>{selectedCompany}</span>
+              </Typography>
+            </Box>
+          )}
+
+          <Box sx={{ mb: 3, p: 2, borderRadius: 2, boxShadow: 2, backgroundColor: '#f9f9f9' }}>
+            <Typography variant="h5" component="h1" gutterBottom>
               Arama Kayıtları
             </Typography>
-            <Box display="flex" alignItems="center">
-              <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
-                PDF'e Aktar
-              </Button>
-              <Button variant="outlined" color="secondary" size="small" onClick={exportToExcel} sx={{ ml: 2 }}>
-                Excel'e Aktar
-              </Button>
-            </Box>
+
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Şirket Seç</InputLabel>
+                  <Select value={selectedCompany} label="Şirket Seç" onChange={(e) => setSelectedCompany(e.target.value)}>
+                    <MenuItem value="">Tümü</MenuItem>
+                    {companies.map((company) => (
+                      <MenuItem key={company.id} value={company.name}>
+                        {company.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={3}>
+                <FormControl fullWidth>
+                  <InputLabel>Müşteri Seç</InputLabel>
+                  <Select value={selectedCustomer} label="Müşteri Seç" onChange={(e) => setSelectedCustomer(e.target.value)}>
+                    <MenuItem value="">Tümü</MenuItem>
+                    {customers.map((customer) => (
+                      <MenuItem key={customer.id} value={customer.name}>
+                        {customer.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={2}>
+                <Box display="flex" justifyContent="center">
+                  <Button
+                    variant="contained"
+                    color="warning"
+                    size="small"
+                    onClick={handleHideClick} // Butona bir event varsa burada kullanılabilir
+                    sx={{ fontWeight: 'bold', width: '100%' }}
+                  >
+                    Filtrele
+                  </Button>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={12} md={4}>
+                <Box display="flex" justifyContent="flex-end" gap={2}>
+                  <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf}>
+                    PDF'e Aktar
+                  </Button>
+                  <Button variant="outlined" color="secondary" size="small" onClick={exportToExcel}>
+                    Excel'e Aktar
+                  </Button>
+                </Box>
+              </Grid>
+            </Grid>
           </Box>
+
           {loading ? (
             <Box display="flex" justifyContent="center" my={4}>
               <CircularProgress />
@@ -620,8 +717,9 @@ const SearchPage = () => {
                       <TableCell>Tarih</TableCell>
                       <TableCell>Şantiye</TableCell>
                       <TableCell>Grup</TableCell>
-                      <TableCell>Şirket</TableCell>
-                      <TableCell>Müşteri</TableCell>
+                      {!selectedCustomer && <TableCell>Müşteri</TableCell>}
+                      {!selectedCompany && <TableCell>Şirket</TableCell>}
+
                       <TableCell>Banka</TableCell>
                       <TableCell>Çek No</TableCell>
                       <TableCell>Çek Vade</TableCell>
@@ -643,8 +741,8 @@ const SearchPage = () => {
                           <TableCell>{formatDate(searchs.date)}</TableCell>
                           <TableCell>{searchs.worksite?.name || '-'}</TableCell>
                           <TableCell>{searchs.group?.name || '-'}</TableCell>
-                          <TableCell>{searchs.company?.name || '-'}</TableCell>
-                          <TableCell>{searchs.customer?.name || '-'}</TableCell>
+                          {!selectedCustomer && <TableCell>{searchs.customer?.name || '-'}</TableCell>}
+                          {!selectedCompany && <TableCell>{searchs.company?.name || '-'}</TableCell>}
                           <TableCell>{searchs.bank || '-'}</TableCell>
                           <TableCell>{searchs.check_no || '-'}</TableCell>
                           <TableCell>{formatDate(searchs.check_time)}</TableCell>

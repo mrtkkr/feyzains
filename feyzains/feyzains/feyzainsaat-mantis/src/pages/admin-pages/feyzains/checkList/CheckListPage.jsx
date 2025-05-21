@@ -421,11 +421,19 @@ const CheckListPage = () => {
   return (
     <Box sx={{ flexGrow: 1, p: 3 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-        <Box display="flex" alignItems="center" gap={1}>
-          <Box display="flex" alignItems="center" gap={1} mx={2}>
+        <Box
+          display="flex"
+          alignItems="center"
+          flexWrap="wrap"
+          gap={2}
+          p={2}
+          sx={{ backgroundColor: '#f5f5f5', borderRadius: 2, boxShadow: 1 }}
+        >
+          {/* Arama Alanları */}
+          <Box display="flex" alignItems="center" gap={2} sx={{ backgroundColor: 'white', p: 2, borderRadius: 2, boxShadow: 1 }}>
             <TextField
               variant="outlined"
-              size="small"
+              size="medium"
               placeholder="Şirket Ara..."
               value={companySearch}
               onChange={(e) => setCompanySearch(e.target.value)}
@@ -439,7 +447,7 @@ const CheckListPage = () => {
             />
             <TextField
               variant="outlined"
-              size="small"
+              size="medium"
               placeholder="Müşteri Ara..."
               value={customerSearch}
               onChange={(e) => setCustomerSearch(e.target.value)}
@@ -452,28 +460,46 @@ const CheckListPage = () => {
               }}
             />
           </Box>
-          {/* 🔽 Tarih filtreleri buraya eklendi */}
-          <Box display="flex" alignItems="center" gap={1} mx={2}>
+
+          {/* Tarih Filtreleri */}
+          <Box display="flex" alignItems="center" gap={2} sx={{ backgroundColor: 'white', p: 2, borderRadius: 2, boxShadow: 1 }}>
             <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={trLocale}>
               <DatePicker
                 label="Başlangıç"
                 value={startDate}
                 onChange={(newValue) => setStartDate(newValue)}
-                slotProps={{ textField: { size: 'medium', variant: 'outlined', sx: { ml: 2 } } }}
+                slotProps={{
+                  textField: {
+                    size: 'medium',
+                    variant: 'outlined'
+                  }
+                }}
               />
               <DatePicker
                 label="Bitiş"
                 value={endDate}
                 minDate={startDate}
                 onChange={(newValue) => setEndDate(newValue)}
-                slotProps={{ textField: { size: 'medium', variant: 'outlined', sx: { ml: 2 } } }}
+                slotProps={{
+                  textField: {
+                    size: 'medium',
+                    variant: 'outlined'
+                  }
+                }}
               />
-              <Button variant="contained" color="primary" size="small" onClick={handleFilter} sx={{ ml: 2 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                size="medium"
+                onClick={handleFilter}
+                sx={{ textTransform: 'none', fontWeight: 'bold' }}
+              >
                 Filtrele
               </Button>
             </LocalizationProvider>
           </Box>
         </Box>
+
         <Box display="flex" alignItems="center" gap={1} mx={2}>
           <Button variant="outlined" color="primary" size="small" startIcon={<PictureAsPdfIcon />} onClick={exportToPdf} sx={{ ml: 2 }}>
             PDF'e Aktar

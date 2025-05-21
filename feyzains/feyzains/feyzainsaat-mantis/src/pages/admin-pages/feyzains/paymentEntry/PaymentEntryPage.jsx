@@ -71,7 +71,7 @@ function descendingComparator(a, b, orderBy) {
 }
 
 function getComparator(order, orderBy) {
-  return order === 'desc' ? (a, b) => descendingComparator(a, b, orderBy) : (a, b) => -descendingComparator(a, b, orderBy);
+  return order === 'asc' ? (a, b) => descendingComparator(a, b, orderBy) : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
 const PaymentEntryPage = () => {
@@ -266,6 +266,11 @@ const PaymentEntryPage = () => {
     });
 
     setPage(0); // sayfayı sıfırla
+
+    setSearchQuery5('');
+    setSearchQuery6('');
+    setSearchQuery7('');
+    setSearchQuery8('');
   };
 
   const importFromExcel = async () => {

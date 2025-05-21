@@ -42,7 +42,7 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
   const [customerId, setCustomerId] = useState('');
   const [bank, setBank] = useState('');
   const [checkNo, setCheckNo] = useState('');
-  const [checkTime, setCheckTime] = useState('');
+  const [checkTime, setCheckTime] = useState(null);
   const [debt, setDebt] = useState('');
 
   // Master data
@@ -84,7 +84,7 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
     setCustomerId('');
     setBank('');
     setCheckNo('');
-    setCheckTime('');
+    setCheckTime(null);
     setDebt('');
     setErrors({});
   };
@@ -211,10 +211,10 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
             setCheckTime(formattedDate);
           } catch (e) {
             console.error('Check time formatı dönüştürülürken hata:', e);
-            setCheckTime('');
+            setCheckTime(null);
           }
         } else {
-          setCheckTime('');
+          setCheckTime(null);
         }
 
         // Borç tutarını ayarla
@@ -242,8 +242,8 @@ const EditPaymentEntry = ({ open, onClose, paymentId }) => {
     if (!companyId) newErrors.company = 'Şirket seçimi gereklidir';
     if (!customerId) newErrors.customer = 'Müşteri seçimi gereklidir';
     if (!bank) newErrors.bank = 'Banka bilgisi gereklidir';
-    if (!checkNo) newErrors.checkNo = 'Çek No gereklidir';
-    if (!checkTime) newErrors.checkTime = 'Çek Vade Tarihi gereklidir';
+    // if (!checkNo) newErrors.checkNo = 'Çek No gereklidir';
+    // if (!checkTime) newErrors.checkTime = 'Çek Vade Tarihi gereklidir';
     if (!debt) newErrors.debt = 'Borç tutarı gereklidir';
     else if (isNaN(debt) || parseFloat(debt) <= 0) newErrors.debt = 'Geçerli bir borç tutarı giriniz';
 

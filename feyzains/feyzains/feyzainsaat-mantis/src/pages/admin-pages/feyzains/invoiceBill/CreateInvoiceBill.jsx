@@ -171,7 +171,7 @@ const CreateInvoiceEntry = ({ open, onClose }) => {
           page: 0,
           pageSize: 10,
           orderBy: 'date',
-          order: 'desc'
+          order: 'asc'
         });
         resetForm();
         onClose();

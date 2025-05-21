@@ -71,7 +71,7 @@ function descendingComparator(a, b, orderBy) {
 }
 
 function getComparator(order, orderBy) {
-  return order === 'desc' ? (a, b) => descendingComparator(a, b, orderBy) : (a, b) => -descendingComparator(a, b, orderBy);
+  return order === 'asc' ? (a, b) => descendingComparator(a, b, orderBy) : (a, b) => -descendingComparator(a, b, orderBy);
 }
 
 const InvoiceBillPage = () => {
@@ -264,6 +264,12 @@ const InvoiceBillPage = () => {
     });
 
     setPage(0); // sayfayı sıfırla
+
+    // inputları temizle
+    setSearchQuery1('');
+    setSearchQuery2('');
+    setSearchQuery3('');
+    setSearchQuery4('');
   };
 
   // Use the refresh trigger to control when to refresh data

@@ -38,7 +38,7 @@ const CreatePaymentEntry = ({ open, onClose }) => {
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [bank, setBank] = useState('');
   const [check_no, setCheck_no] = useState('');
-  const [check_time, setCheck_time] = useState('');
+  const [check_time, setCheck_time] = useState(null);
   const [debt, setDebt] = useState('');
 
   // Validation errors
@@ -157,7 +157,7 @@ const CreatePaymentEntry = ({ open, onClose }) => {
           page: 0, // sayfa 1 (0-indexli yazmışsın yukarıda)
           pageSize: 10,
           orderBy: 'date',
-          order: 'desc'
+          order: 'asc'
         });
         resetForm();
         onClose();
