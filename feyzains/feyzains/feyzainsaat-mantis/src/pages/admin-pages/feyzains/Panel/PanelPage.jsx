@@ -57,6 +57,18 @@ function descendingComparator(a, b, orderBy) {
 function getComparator(order, orderBy) {
   return order === 'desc' ? (a, b) => descendingComparator(a, b, orderBy) : (a, b) => -descendingComparator(a, b, orderBy);
 }
+const formatDate = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return date.toLocaleString('tr-TR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+};
 
 const PanelPage = () => {
   // States
@@ -659,16 +671,16 @@ const PanelPage = () => {
                         </TableRow>
                       ))}
                   </TableBody>
-                  <TablePagination
-                    component="div"
-                    count={filteredWorksites.length}
-                    page={worksitePage}
-                    onPageChange={handleWorksiteChangePage}
-                    rowsPerPage={worksiteRowsPerPage}
-                    onRowsPerPageChange={handleWorksiteChangeRowsPerPage}
-                    rowsPerPageOptions={[3, 10, 25]}
-                  />
                 </Table>
+                <TablePagination
+                  component="div"
+                  count={filteredWorksites.length}
+                  page={worksitePage}
+                  onPageChange={handleWorksiteChangePage}
+                  rowsPerPage={worksiteRowsPerPage}
+                  onRowsPerPageChange={handleWorksiteChangeRowsPerPage}
+                  rowsPerPageOptions={[3, 10, 25]}
+                />
               </TableContainer>
             </CardContent>
           </Card>
@@ -731,16 +743,16 @@ const PanelPage = () => {
                       </TableRow>
                     ))}
                   </TableBody>
-                  <TablePagination
-                    component="div"
-                    count={filteredGroups.length}
-                    page={groupPage}
-                    onPageChange={handleGroupChangePage}
-                    rowsPerPage={groupRowsPerPage}
-                    onRowsPerPageChange={handleGroupChangeRowsPerPage}
-                    rowsPerPageOptions={[3, 10, 25]}
-                  />
                 </Table>
+                <TablePagination
+                  component="div"
+                  count={filteredGroups.length}
+                  page={groupPage}
+                  onPageChange={handleGroupChangePage}
+                  rowsPerPage={groupRowsPerPage}
+                  onRowsPerPageChange={handleGroupChangeRowsPerPage}
+                  rowsPerPageOptions={[3, 10, 25]}
+                />
               </TableContainer>
             </CardContent>
           </Card>
@@ -807,16 +819,16 @@ const PanelPage = () => {
                         </TableRow>
                       ))}
                   </TableBody>
-                  <TablePagination
-                    component="div"
-                    count={filteredCompanies.length}
-                    page={companyPage}
-                    onPageChange={handleCompanyChangePage}
-                    rowsPerPage={companyRowsPerPage}
-                    onRowsPerPageChange={handleCompanyChangeRowsPerPage}
-                    rowsPerPageOptions={[3, 10, 25]}
-                  />
                 </Table>
+                <TablePagination
+                  component="div"
+                  count={filteredCompanies.length}
+                  page={companyPage}
+                  onPageChange={handleCompanyChangePage}
+                  rowsPerPage={companyRowsPerPage}
+                  onRowsPerPageChange={handleCompanyChangeRowsPerPage}
+                  rowsPerPageOptions={[3, 10, 25]}
+                />
               </TableContainer>
             </CardContent>
           </Card>
@@ -880,16 +892,16 @@ const PanelPage = () => {
                         </TableRow>
                       ))}
                   </TableBody>
-                  <TablePagination
-                    component="div"
-                    count={filteredCustomers.length}
-                    page={customerPage}
-                    onPageChange={handleCustomerChangePage}
-                    rowsPerPage={customerRowsPerPage}
-                    onRowsPerPageChange={handleCustomerChangeRowsPerPage}
-                    rowsPerPageOptions={[3, 10, 25]}
-                  />
                 </Table>
+                <TablePagination
+                  component="div"
+                  count={filteredCustomers.length}
+                  page={customerPage}
+                  onPageChange={handleCustomerChangePage}
+                  rowsPerPage={customerRowsPerPage}
+                  onRowsPerPageChange={handleCustomerChangeRowsPerPage}
+                  rowsPerPageOptions={[3, 10, 25]}
+                />
               </TableContainer>
             </CardContent>
           </Card>
@@ -947,9 +959,9 @@ const PanelPage = () => {
                         <TableRow key={personal.id}>
                           <TableCell>{personal.name}</TableCell>
                           <TableCell>{personal.identity_number}</TableCell>
-                          <TableCell>{personal.creation_date?.slice(0, 16).replace('T', ' ') || '-'}</TableCell>
-                          <TableCell>{personal.entry?.slice(0, 16).replace('T', ' ') || '-'}</TableCell>
-                          <TableCell>{personal.exit?.slice(0, 16).replace('T', ' ') || '-'}</TableCell>
+                          <TableCell>{formatDate(personal.creation_date)}</TableCell>
+                          <TableCell>{formatDate(personal.entry)}</TableCell>
+                          <TableCell>{formatDate(personal.exit)}</TableCell>
                           <TableCell>{personal.worksite_detail?.name || '-'}</TableCell>
                           <TableCell>{personal.created_by?.username || '-'}</TableCell>
                           <TableCell align="right">
@@ -967,15 +979,6 @@ const PanelPage = () => {
                         </TableRow>
                       ))}
                   </TableBody>
-                  <TablePagination
-                    component="div"
-                    count={filteredPersonals.length}
-                    page={personalPage}
-                    onPageChange={handlePersonalChangePage}
-                    rowsPerPage={personalRowsPerPage}
-                    onRowsPerPageChange={handlePersonalChangeRowsPerPage}
-                    rowsPerPageOptions={[3, 10, 25]}
-                  />
 
                   {/* <TableBody>
                     {filteredPersonals.map((personal) => (
@@ -1003,6 +1006,15 @@ const PanelPage = () => {
                     ))}
                   </TableBody> */}
                 </Table>
+                <TablePagination
+                  component="div"
+                  count={filteredPersonals.length}
+                  page={personalPage}
+                  onPageChange={handlePersonalChangePage}
+                  rowsPerPage={personalRowsPerPage}
+                  onRowsPerPageChange={handlePersonalChangeRowsPerPage}
+                  rowsPerPageOptions={[3, 10, 25]}
+                />
               </TableContainer>
             </CardContent>
           </Card>

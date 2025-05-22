@@ -221,12 +221,14 @@ const CheckListPage = () => {
       }
 
       const data = checklists.map((paymentEntryInvoice) => ({
-        Banka: paymentEntryInvoice.bank || '-',
-        Şirket: paymentEntryInvoice.company?.name || '-',
-        Müşteri: paymentEntryInvoice.customer?.name || '-',
-        Borç: formatNumber(paymentEntryInvoice.debt) || '-',
         'Çek No': paymentEntryInvoice.check_no || '-',
         'Çek Vade': paymentEntryInvoice.check_time ? formatDate(paymentEntryInvoice.check_time) : '-',
+        Müşteri: paymentEntryInvoice.customer?.name || '-',
+        Şirket: paymentEntryInvoice.company?.name || '-',
+        Şantiye: paymentEntryInvoice.worksite?.name || '-',
+        Group: paymentEntryInvoice.group?.name || '-',
+        Banka: paymentEntryInvoice.bank || '-',
+        Borç: formatNumber(paymentEntryInvoice.debt) || '-',
         Oluşturan: paymentEntryInvoice.created_by?.username || '-'
       }));
 
@@ -234,12 +236,14 @@ const CheckListPage = () => {
 
       // Kolon genişliklerini ayarla
       worksheet['!cols'] = [
-        { wch: 20 }, // Banka
-        { wch: 20 }, // Şirket
-        { wch: 20 }, // Müşteri
-        { wch: 20 }, // Borç Tutarı
         { wch: 15 }, // Check No
         { wch: 15 }, // Check Vade
+        { wch: 20 }, // Müşteri
+        { wch: 20 }, // Şirket
+        { wch: 25 }, // Şantiye
+        { wch: 25 }, // Grup
+        { wch: 20 }, // Banka
+        { wch: 20 }, // Borç Tutarı
         { wch: 25 } // Oluşturan
       ];
 
@@ -292,8 +296,8 @@ const CheckListPage = () => {
       doc.text(`Oluşturma Tarihi: ${today}`, 14, 22);
 
       // Tablo konfigürasyonu - Türkçe karakterli başlıklar
-      const headers = ['Grup', 'Şirket', 'Müşteri', 'Borç', 'Çek No', 'Çek Vade'];
-      const columnWidths = [35, 45, 45, 30, 30, 30];
+      const headers = ['Çek No', 'Çek Vade', 'Müşteri', 'Şirket', 'Şantiye', 'Grup', 'Banka', 'Borç'];
+      const columnWidths = [30, 30, 45, 45, 45, 30, 30, 30];
       const totalTableWidth = columnWidths.reduce((a, b) => a + b, 0);
       const marginX = (doc.internal.pageSize.getWidth() - totalTableWidth) / 2;
 
@@ -301,16 +305,18 @@ const CheckListPage = () => {
       const filteredData = checklists
         .filter((item) => item.check_no)
         .map((item) => [
-          item.bank || '-',
-          item.company?.name || '-',
-          item.customer?.name || '-',
-          formatNumber(item.debt),
           item.check_no || '-',
-          formatDate(item.check_time)
+          formatDate(item.check_time),
+          item.customer?.name || '-',
+          item.company?.name || '-',
+          item.worksite?.name || '-',
+          item.group?.name || '-',
+          item.bank || '-',
+          formatNumber(item.debt)
         ]);
 
       let currentY = 30;
-      const cellHeight = 10;
+      const cellHeight = 15;
 
       // ÖNEMLİ: Font kodlamasını UTF-8 olarak ayarla
       doc.setFont('Roboto', 'normal');
@@ -524,24 +530,28 @@ const CheckListPage = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Grup</TableCell>
-                  <TableCell>Şirket</TableCell>
-                  <TableCell>Müşteri</TableCell>
-                  <TableCell>Borç</TableCell>
                   <TableCell>Çek No</TableCell>
                   <TableCell>Çek Vade</TableCell>
+                  <TableCell>Müşteri</TableCell>
+                  <TableCell>Şirket</TableCell>
+                  <TableCell>Şantiye</TableCell>
+                  <TableCell>Grup</TableCell>
+                  <TableCell>Banka</TableCell>
+                  <TableCell>Borç</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {visibleCheckListRows.length > 0 ? (
                   visibleCheckListRows.map((checklists) => (
                     <TableRow key={checklists.id}>
-                      <TableCell>{checklists.bank || '-'}</TableCell>
-                      <TableCell>{checklists.company?.name || '-'}</TableCell>
-                      <TableCell>{checklists.customer?.name || '-'}</TableCell>
-                      <TableCell>{formatNumber(checklists.debt)}</TableCell>
                       <TableCell>{checklists.check_no || '-'}</TableCell>
                       <TableCell>{formatDate(checklists.check_time)}</TableCell>
+                      <TableCell>{checklists.customer?.name || '-'}</TableCell>
+                      <TableCell>{checklists.company?.name || '-'}</TableCell>
+                      <TableCell>{checklists.worksite?.name || '-'}</TableCell>
+                      <TableCell>{checklists.group?.name || '-'}</TableCell>
+                      <TableCell>{checklists.bank || '-'}</TableCell>
+                      <TableCell>{formatNumber(checklists.debt)}</TableCell>
                     </TableRow>
                   ))
                 ) : (

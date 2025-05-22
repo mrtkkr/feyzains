@@ -52,6 +52,7 @@ import ViewSearch from './ViewSearch';
 import { AuthContext } from 'contexts/auth/AuthContext';
 import * as XLSX from 'xlsx';
 import { flexbox } from '@mui/system';
+import ExcelJS from 'exceljs';
 
 const formatDateLocal = (date) => {
   if (!date) return '';
@@ -350,65 +351,170 @@ const SearchPage = () => {
         return;
       }
 
-      const data = searchs.map((paymentEntryInvoice) => ({
-        Tarih: formatDate(paymentEntryInvoice.date),
-        Şantiye: paymentEntryInvoice.worksite?.name || '-',
-        Grup: paymentEntryInvoice.group?.name || '-',
-        Şirket: paymentEntryInvoice.company?.name || '-',
-        Müşteri: paymentEntryInvoice.customer?.name || '-',
-        Banka: paymentEntryInvoice.bank || '-',
-        'Çek No': paymentEntryInvoice.check_no || '-',
-        'Çek Vade': paymentEntryInvoice.check_time ? formatDate(paymentEntryInvoice.check_time) : '-',
-        Malzeme: paymentEntryInvoice.material || '-',
-        Adet: paymentEntryInvoice.quantity || '-',
-        'Birim Fiyatı': formatNumber(paymentEntryInvoice.unit_price),
-        Tutar: formatNumber(paymentEntryInvoice.price),
-        KDV: paymentEntryInvoice.tax || '-',
-        Tevkifat: paymentEntryInvoice.withholding || '-',
-        Alacak: paymentEntryInvoice.receivable || '-',
-        'Borç Tutarı': formatNumber(paymentEntryInvoice.debt),
-        Oluşturan: paymentEntryInvoice.created_by?.username || '-'
-      }));
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Ödemeler');
 
-      const worksheet = XLSX.utils.json_to_sheet(data);
+      let currentRow = 1;
 
-      // Kolon genişliklerini ayarla
-      worksheet['!cols'] = [
-        { wch: 12 }, // Tarih
-        { wch: 20 }, // Şantiye
-        { wch: 15 }, // Grup
-        { wch: 20 }, // Şirket
-        { wch: 20 }, // Müşteri
-        { wch: 15 }, // Banka
-        { wch: 15 }, // Check No
-        { wch: 15 }, // Check Vade
-        { wch: 15 }, // Malzeme
-        { wch: 12 }, // Adet
-        { wch: 15 }, // Birim Fiyatı
-        { wch: 15 }, // Tutar
-        { wch: 20 }, // KDV
-        { wch: 20 }, // Tevkifat
-        { wch: 20 }, // Alacak
-        { wch: 20 }, // Borç Tutarı
-        { wch: 25 } // Oluşturan
+      // Sütun tanımları
+      const baseColumns = [
+        { header: 'Tarih', key: 'tarih', width: 12 },
+        { header: 'Şantiye', key: 'santiye', width: 20 },
+        { header: 'Grup', key: 'grup', width: 15 },
+        { header: 'Şirket', key: 'sirket', width: 20 },
+        { header: 'Müşteri', key: 'musteri', width: 20 },
+        { header: 'Banka', key: 'banka', width: 15 },
+        { header: 'Çek No', key: 'cekNo', width: 15 },
+        { header: 'Çek Vade', key: 'cekVade', width: 15 },
+        { header: 'Malzeme', key: 'malzeme', width: 15 },
+        { header: 'Adet', key: 'adet', width: 12 },
+        { header: 'Birim Fiyatı', key: 'birimFiyati', width: 15 },
+        { header: 'Tutar', key: 'tutar', width: 15 },
+        { header: 'KDV', key: 'kdv', width: 20 },
+        { header: 'Tevkifat', key: 'tevkifat', width: 20 },
+        { header: 'Alacak', key: 'alacak', width: 20 },
+        { header: 'Borç Tutarı', key: 'borcTutari', width: 20 },
+        { header: 'Oluşturan', key: 'olusturan', width: 25 }
       ];
 
-      // Header'ı bold yapmak için manuel hücre formatı
-      const headerRange = XLSX.utils.decode_range(worksheet['!ref']);
-      for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
-        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
-        if (!worksheet[cellAddress]) continue;
-        worksheet[cellAddress].s = {
-          font: { bold: true },
-          alignment: { horizontal: 'center', vertical: 'center' }
-        };
+      const filteredColumns = baseColumns.filter((col) => {
+        if (selectedCompany && col.key === 'sirket') return false;
+        if (selectedCustomer && col.key === 'musteri') return false;
+        return true;
+      });
+
+      // Sütun genişliklerini manuel ayarla
+      filteredColumns.forEach((col, index) => {
+        worksheet.getColumn(index + 1).width = col.width;
+      });
+
+      // Şirket ve Müşteri Bilgileri Üste Yazılır
+      if (selectedCompany || selectedCustomer) {
+        if (selectedCompany) {
+          worksheet.getCell(`A${currentRow}`).value = `Seçilen Şirket: ${selectedCompany}`;
+          currentRow++;
+        }
+        if (selectedCustomer) {
+          worksheet.getCell(`A${currentRow}`).value = `Seçilen Müşteri: ${selectedCustomer}`;
+          currentRow++;
+        }
+        currentRow++; // boşluk satırı
+
+        // Manuel başlık satırı ekle
+        worksheet.getRow(currentRow).values = filteredColumns.map((col) => col.header);
+        worksheet.getRow(currentRow).font = { bold: true };
+        currentRow++;
+      } else {
+        // Seçim yoksa normal başlık ekle
+        worksheet.getRow(currentRow).values = filteredColumns.map((col) => col.header);
+        worksheet.getRow(currentRow).font = { bold: true };
+        currentRow++;
       }
 
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Ödemeler');
+      // Verileri ekle
+      searchs.forEach((entry) => {
+        const rowValues = [];
 
-      // Export işlemi
-      XLSX.writeFile(workbook, 'Arama_Bolumu.xlsx');
+        filteredColumns.forEach((col) => {
+          switch (col.key) {
+            case 'tarih':
+              rowValues.push(formatDate(entry.date));
+              break;
+            case 'santiye':
+              rowValues.push(entry.worksite?.name || '-');
+              break;
+            case 'grup':
+              rowValues.push(entry.group?.name || '-');
+              break;
+            case 'sirket':
+              rowValues.push(entry.company?.name || '-');
+              break;
+            case 'musteri':
+              rowValues.push(entry.customer?.name || '-');
+              break;
+            case 'banka':
+              rowValues.push(entry.bank || '-');
+              break;
+            case 'cekNo':
+              rowValues.push(entry.check_no || '-');
+              break;
+            case 'cekVade':
+              rowValues.push(entry.check_time ? formatDate(entry.check_time) : '-');
+              break;
+            case 'malzeme':
+              rowValues.push(entry.material || '-');
+              break;
+            case 'adet':
+              rowValues.push(entry.quantity || '-');
+              break;
+            case 'birimFiyati':
+              rowValues.push(formatNumber(entry.unit_price));
+              break;
+            case 'tutar':
+              rowValues.push(formatNumber(entry.price));
+              break;
+            case 'kdv':
+              rowValues.push(entry.tax || '-');
+              break;
+            case 'tevkifat':
+              rowValues.push(entry.withholding || '-');
+              break;
+            case 'alacak':
+              rowValues.push(formatNumber(entry.receivable));
+              break;
+            case 'borcTutari':
+              rowValues.push(formatNumber(entry.debt));
+              break;
+            case 'olusturan':
+              rowValues.push(entry.created_by?.username || '-');
+              break;
+            default:
+              rowValues.push('-');
+          }
+        });
+
+        worksheet.getRow(currentRow).values = rowValues;
+        currentRow++;
+      });
+
+      // Toplam satırı
+      const totalRowValues = [];
+      filteredColumns.forEach((col) => {
+        switch (col.key) {
+          case 'birimFiyati':
+            totalRowValues.push('TOPLAM:');
+            break;
+          case 'tutar':
+            totalRowValues.push(formatNumber(totalPrice));
+            break;
+          case 'alacak':
+            totalRowValues.push(formatNumber(totalReceivable));
+            break;
+          case 'borcTutari':
+            totalRowValues.push(formatNumber(totalDebt));
+            break;
+          default:
+            totalRowValues.push('');
+        }
+      });
+
+      const totalRow = worksheet.getRow(currentRow);
+      totalRow.values = totalRowValues;
+      totalRow.font = { bold: true };
+      totalRow.alignment = { horizontal: 'center' };
+
+      // Excel dosyasını oluştur ve indir
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Arama_Bolumu.xlsx';
+      a.click();
+      window.URL.revokeObjectURL(url);
+
       toast.success('Excel başarıyla oluşturuldu!');
     } catch (error) {
       toast.error('Excel oluşturulurken hata oluştu.');
@@ -441,52 +547,115 @@ const SearchPage = () => {
       const today = new Date().toLocaleDateString('tr-TR');
       doc.text(`Oluşturma Tarihi: ${today}`, 14, 22);
 
-      // Tablo konfigürasyonu - Türkçe karakterli başlıklar
-      const headers = [
-        'Tarih',
-        'Şantiye',
-        'Grup',
-        'Şirk.',
-        'Müşt.',
-        'Banka',
-        'Çek No',
-        'Vade',
-        'Malzeme',
-        'Adet',
-        'Birim ₺',
-        'Tutar',
-        'KDV',
-        'Tevk.',
-        'Alacak',
-        'Borç'
+      let currentY = 29;
+
+      // Şirket ve Müşteri Bilgileri
+      if (selectedCompany || selectedCustomer) {
+        if (selectedCompany) {
+          doc.text(`Seçilen Şirket: ${selectedCompany}`, 14, currentY);
+          currentY += 7;
+        }
+        if (selectedCustomer) {
+          doc.text(`Seçilen Müşteri: ${selectedCustomer}`, 14, currentY);
+          currentY += 7;
+        }
+        currentY += 3; // boşluk
+      }
+
+      // Tablo konfigürasyonu - filtrelenmiş başlıklar
+      const baseHeaders = [
+        { title: 'Tarih', key: 'tarih', width: 27 },
+        { title: 'Şantiye', key: 'santiye', width: 25 },
+        { title: 'Grup', key: 'grup', width: 45 },
+        { title: 'Şirk.', key: 'sirket', width: 35 },
+        { title: 'Müşt.', key: 'musteri', width: 35 },
+        { title: 'Banka', key: 'banka', width: 25 },
+        { title: 'Çek No', key: 'cekNo', width: 20 },
+        { title: 'Vade', key: 'cekVade', width: 28 },
+        { title: 'Malzeme', key: 'malzeme', width: 25 },
+        { title: 'Adet', key: 'adet', width: 24 },
+        { title: 'Birim ₺', key: 'birimFiyati', width: 20 },
+        { title: 'Tutar', key: 'tutar', width: 25 },
+        { title: 'KDV', key: 'kdv', width: 20 },
+        { title: 'Tevk.', key: 'tevkifat', width: 20 },
+        { title: 'Alacak', key: 'alacak', width: 25 },
+        { title: 'Borç', key: 'borcTutari', width: 25 }
       ];
-      const columnWidths = [27, 25, 45, 35, 35, 25, 20, 28, 25, 24, 20, 25, 20, 20, 25, 25]; // Kolon genişlikleri
+
+      // Seçilen şirket/müşteriye göre başlıkları filtrele
+      const filteredHeaders = baseHeaders.filter((header) => {
+        if (selectedCompany && header.key === 'sirket') return false;
+        if (selectedCustomer && header.key === 'musteri') return false;
+        return true;
+      });
+
+      const headers = filteredHeaders.map((h) => h.title);
+      const columnWidths = filteredHeaders.map((h) => h.width);
       const totalTableWidth = columnWidths.reduce((a, b) => a + b, 0);
       const marginX = (doc.internal.pageSize.getWidth() - totalTableWidth) / 2;
 
-      // Veri hazırlama
-      const filteredData = searchs.map((paymentEntryInvoice) => [
-        formatDate(paymentEntryInvoice.date),
-        paymentEntryInvoice.worksite?.name || '-',
-        paymentEntryInvoice.group?.name || '-',
-        paymentEntryInvoice.company?.name || '-',
-        paymentEntryInvoice.customer?.name || '-',
-        paymentEntryInvoice.bank?.name || '-',
-        paymentEntryInvoice.check_no || '-', // eklendi
-        paymentEntryInvoice.check_time // eklendi
-          ? formatDate(paymentEntryInvoice.check_time)
-          : '-',
-        paymentEntryInvoice.material || '-',
-        paymentEntryInvoice.quantity || '-',
-        formatNumber(paymentEntryInvoice.unit_price),
-        formatNumber(paymentEntryInvoice.price),
-        paymentEntryInvoice.tax || '-',
-        paymentEntryInvoice.withholding || '-',
-        formatNumber(paymentEntryInvoice.receivable) || '-',
-        formatNumber(paymentEntryInvoice.debt) || '-' // eklendi
-      ]);
+      // Veri hazırlama - filtrelenmiş
+      const filteredData = searchs.map((paymentEntryInvoice) => {
+        const rowData = [];
 
-      let currentY = 30;
+        filteredHeaders.forEach((header) => {
+          switch (header.key) {
+            case 'tarih':
+              rowData.push(formatDate(paymentEntryInvoice.date));
+              break;
+            case 'santiye':
+              rowData.push(paymentEntryInvoice.worksite?.name || '-');
+              break;
+            case 'grup':
+              rowData.push(paymentEntryInvoice.group?.name || '-');
+              break;
+            case 'sirket':
+              rowData.push(paymentEntryInvoice.company?.name || '-');
+              break;
+            case 'musteri':
+              rowData.push(paymentEntryInvoice.customer?.name || '-');
+              break;
+            case 'banka':
+              rowData.push(paymentEntryInvoice.bank?.name || '-');
+              break;
+            case 'cekNo':
+              rowData.push(paymentEntryInvoice.check_no || '-');
+              break;
+            case 'cekVade':
+              rowData.push(paymentEntryInvoice.check_time ? formatDate(paymentEntryInvoice.check_time) : '-');
+              break;
+            case 'malzeme':
+              rowData.push(paymentEntryInvoice.material || '-');
+              break;
+            case 'adet':
+              rowData.push(paymentEntryInvoice.quantity || '-');
+              break;
+            case 'birimFiyati':
+              rowData.push(formatNumber(paymentEntryInvoice.unit_price));
+              break;
+            case 'tutar':
+              rowData.push(formatNumber(paymentEntryInvoice.price));
+              break;
+            case 'kdv':
+              rowData.push(paymentEntryInvoice.tax || '-');
+              break;
+            case 'tevkifat':
+              rowData.push(paymentEntryInvoice.withholding || '-');
+              break;
+            case 'alacak':
+              rowData.push(formatNumber(paymentEntryInvoice.receivable) || '-');
+              break;
+            case 'borcTutari':
+              rowData.push(formatNumber(paymentEntryInvoice.debt) || '-');
+              break;
+            default:
+              rowData.push('-');
+          }
+        });
+
+        return rowData;
+      });
+
       const cellHeight = 12;
 
       // ÖNEMLİ: Font kodlamasını UTF-8 olarak ayarla
@@ -580,6 +749,60 @@ const SearchPage = () => {
         currentY += cellHeight;
       });
 
+      // Toplamları hesapla
+      let totalPrice = 0;
+      let totalReceivable = 0;
+      let totalDebt = 0;
+
+      searchs.forEach((entry) => {
+        totalPrice += Number(entry.price) || 0;
+        totalReceivable += Number(entry.receivable) || 0;
+        totalDebt += Number(entry.debt) || 0;
+      });
+
+      // "Toplam" satırı ekle - filtrelenmiş
+      currentX = marginX;
+      const totalRow = [];
+
+      filteredHeaders.forEach((header, i) => {
+        switch (header.key) {
+          case 'tutar':
+            totalRow.push(formatNumber(totalPrice));
+            break;
+          case 'alacak':
+            totalRow.push(formatNumber(totalReceivable));
+            break;
+          case 'borcTutari':
+            totalRow.push(formatNumber(totalDebt));
+            break;
+          case 'tarih':
+            totalRow.push('TOPLAM');
+            break;
+          default:
+            totalRow.push('');
+        }
+      });
+
+      // Kutuları çiz
+      doc.setFontStyle?.('bold'); // Eski sürümde varsa
+      doc.setFontSize(9);
+      totalRow.forEach((cell, i) => {
+        doc.rect(currentX, currentY, columnWidths[i], cellHeight);
+        currentX += columnWidths[i];
+      });
+
+      // Metni yaz
+      currentX = marginX;
+      totalRow.forEach((cell, i) => {
+        doc.text(cell.toString(), currentX + 4, currentY + 7, {
+          charSpace: 0,
+          lineHeightFactor: 1,
+          maxWidth: columnWidths[i] - 8,
+          align: 'left'
+        });
+        currentX += columnWidths[i];
+      });
+
       // PDF'i kaydet
       doc.save('Arama_Kayıtları.pdf');
       toast.success('PDF başarıyla oluşturuldu!');
@@ -613,6 +836,9 @@ const SearchPage = () => {
     }),
     [isEditSearchDialogOpen, selectedSearchId]
   );
+  const totalPrice = visibleSearchRows.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+  const totalReceivable = visibleSearchRows.reduce((sum, item) => sum + (Number(item.receivable) || 0), 0);
+  const totalDebt = visibleSearchRows.reduce((sum, item) => sum + (Number(item.debt) || 0), 0);
 
   return (
     <>
@@ -784,6 +1010,55 @@ const SearchPage = () => {
                             {searchQuery3 ? 'Arama kriterlerinize uygun fatura kaydı bulunamadı.' : 'Henüz fatura kaydı bulunmamaktadır.'}
                           </Typography>
                         </TableCell>
+                      </TableRow>
+                    )}
+                    {visibleSearchRows.length > 0 && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={11 - [selectedCompany, selectedCustomer].filter((item) => item !== '').length}
+                          sx={{ fontWeight: 'bold' }}
+                        ></TableCell>
+
+                        {/* Tutar */}
+                        <TableCell sx={{ fontWeight: 'bold' }}>Toplam Tutar:</TableCell>
+
+                        {/* KDV ve Tevkifat */}
+                        <TableCell />
+                        <TableCell />
+
+                        {/* Alacak */}
+                        <TableCell sx={{ fontWeight: 'bold' }}>Toplam Alacak:</TableCell>
+
+                        {/* Borç */}
+                        <TableCell sx={{ fontWeight: 'bold' }}>Toplam Borç:</TableCell>
+
+                        {/* İşlemler */}
+                        <TableCell />
+                      </TableRow>
+                    )}
+
+                    {visibleSearchRows.length > 0 && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={11 - [selectedCompany, selectedCustomer].filter((item) => item !== '').length}
+                          sx={{ fontWeight: 'bold' }}
+                        ></TableCell>
+
+                        {/* Tutar */}
+                        <TableCell sx={{ fontWeight: 'bold' }}>{formatNumber(totalPrice)}</TableCell>
+
+                        {/* KDV ve Tevkifat */}
+                        <TableCell />
+                        <TableCell />
+
+                        {/* Alacak */}
+                        <TableCell sx={{ fontWeight: 'bold' }}>{formatNumber(totalReceivable)}</TableCell>
+
+                        {/* Borç */}
+                        <TableCell sx={{ fontWeight: 'bold' }}>{formatNumber(totalDebt)}</TableCell>
+
+                        {/* İşlemler */}
+                        <TableCell />
                       </TableRow>
                     )}
                   </TableBody>
