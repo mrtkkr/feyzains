@@ -93,9 +93,6 @@ class PersonalSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
-#payment_invoice serializer
-
 class PaymenInvoiceSerializer(serializers.ModelSerializer):
     created_by = UserSerializer(read_only=True)
     

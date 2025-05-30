@@ -167,9 +167,9 @@ WSGI_APPLICATION = 'feyzainsaat_django.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'feyzainsaat',
+        'NAME': 'melsa',
         'USER': 'root',
-        'PASSWORD': 'admin123',
+        'PASSWORD': '123',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {

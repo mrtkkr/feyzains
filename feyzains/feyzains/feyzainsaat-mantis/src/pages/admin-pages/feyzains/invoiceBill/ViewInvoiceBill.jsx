@@ -28,6 +28,11 @@ const formatNumber = (number) => {
   })} ₺`;
 };
 
+const WITHHOLDING_RATES = Array.from({ length: 10 }, (_, i) => ({
+  value: i / 10,
+  label: i === 0 ? '0' : `${i}/10`
+}));
+
 const ViewInvoiceEntry = ({ open, onClose, invoiceId }) => {
   const { getInvoiceById } = useContext(PaymentEntryInvoiceContext);
   const { fetchUser } = useContext(AuthContext);
@@ -96,6 +101,7 @@ const ViewInvoiceEntry = ({ open, onClose, invoiceId }) => {
               </Typography>
               <Divider sx={{ mb: 2 }} />
 
+              <DetailItem label="Fatura No" value={invoice.invoice_no} />
               <DetailItem label="Tarih" value={formatDate(invoice.date)} />
               <DetailItem label="Şantiye" value={invoice.worksite.name} />
               <DetailItem label="Grup" value={invoice.group.name} />
@@ -113,8 +119,14 @@ const ViewInvoiceEntry = ({ open, onClose, invoiceId }) => {
               <DetailItem label="Adet" value={invoice.quantity} />
               <DetailItem label="Birim Fiyatı" value={formatNumber(invoice.unit_price)} />
               <DetailItem label="Tutar" value={formatNumber(invoice.price)} />
-              <DetailItem label="Kdv" value={invoice.tax} />
-              <DetailItem label="Tevkifat" value={invoice.withholding} />
+              <DetailItem label="KDV (%)" value={`${invoice.tax} %`} />
+              <DetailItem label="KDV Tutarı" value={formatNumber(invoice.tax_amount)} />
+              <DetailItem
+                label="Tevkifat (%)"
+                value={`${(invoice.withholding * 10)}/10`}
+              />
+              <DetailItem label="Tevkifat Tutarı" value={formatNumber(invoice.withholding_amount)} />
+
               <DetailItem label="Alacak" value={formatNumber(invoice.receivable)} />
             </Box>
 

@@ -24,9 +24,9 @@ const AddWorksitePage = ({ open, onClose }) => {
 
     const res = await addWorksite(formData);
     if (res.error) {
-      toast.error('İşyeri eklenemedi!');
+      toast.error('Şantiye eklenemedi!');
     } else {
-      toast.success('İşyeri başarıyla eklendi!');
+      toast.success('Şantiye başarıyla eklendi!');
       fetchWorksites();
       setFormData({ name: '' }); // Formu temizle
       onClose();
@@ -35,11 +35,11 @@ const AddWorksitePage = ({ open, onClose }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Yeni İşyeri Ekle</DialogTitle>
+      <DialogTitle>Yeni Şantiye Ekle</DialogTitle>
       <DialogContent>
         <Grid container spacing={2} sx={{ mt: 1 }}>
           <Grid item xs={12}>
-            <TextField fullWidth label="İşyeri Adı" name="name" value={formData.name} onChange={handleChange} required />
+            <TextField fullWidth label="Şantiye Adı" name="name" value={formData.name} onChange={handleChange} required />
           </Grid>
         </Grid>
       </DialogContent>

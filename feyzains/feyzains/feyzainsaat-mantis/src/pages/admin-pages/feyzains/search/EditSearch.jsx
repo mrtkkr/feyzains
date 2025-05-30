@@ -21,7 +21,6 @@ import { tr } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import { PaymentEntryInvoiceContext } from '../../../../contexts/admin/feyzains/PaymentEntryInvoiceContext';
 import { sendApiRequest } from '../../../../services/network_service';
-import { set } from 'lodash';
 
 const EditSearch = ({ open, onClose, searchId }) => {
   const { updateSearch, getSearchById, loading } = useContext(PaymentEntryInvoiceContext);
@@ -43,12 +42,29 @@ const EditSearch = ({ open, onClose, searchId }) => {
   const [check_time, setCheck_time] = useState('');
   const [material, setMaterial] = useState('');
   const [quantity, setQuantity] = useState('');
-  const [unit_price, setUnit_price] = useState('');
-  const [price, setPrice] = useState('');
-  const [tax, setTax] = useState('');
-  const [withholding, setWithholding] = useState('');
-  const [receivable, setReceivable] = useState('');
+  const [unitPrice, setUnitPrice] = useState(0);    // eski unit_price
+  const [price, setPrice] = useState(0);
+  const [taxRate, setTaxRate] = useState(0);
+  const [taxAmount, setTaxAmount] = useState(0);
+  const [withholdingRate, setWithholdingRate] = useState(0);
+  const [withholdingAmount, setWithholdingAmount] = useState(0);
   const [debt, setDebt] = useState('');
+
+   // en başa, import’ların altına:
+ const KDV_RATES = [0, 1, 10, 18, 20];
+ const WITHHOLDING_RATES = Array.from({ length: 10 }, (_, i) => ({
+   value: i / 10,
+   label: i === 0 ? '0' : `${i}/10`
+ }));
+
+ useEffect(() => {
+   const qty = parseFloat(quantity) || 0;
+   const unit = parseFloat(unitPrice) || 0;
+   const base = qty * unit;
+   setPrice(base);
+   setTaxAmount((base * taxRate) / 100);
+   setWithholdingAmount(taxAmount * withholdingRate);
+ }, [quantity, unitPrice, taxRate, withholdingRate]);
 
   const formatDateToInput = (dateStr) => {
     const date = new Date(dateStr);
@@ -99,11 +115,12 @@ const EditSearch = ({ open, onClose, searchId }) => {
         setCheck_time(bill.check_time);
         setMaterial(bill.material);
         setQuantity(bill.quantity);
-        setUnit_price(bill.unit_price);
+        setUnitPrice(bill.unit_price);
         setPrice(bill.price);
-        setTax(bill.tax);
-        setWithholding(bill.withholding);
-        setReceivable(bill.receivable);
+        setTaxRate(parseFloat(bill.tax));
+        setTaxAmount(bill.tax_amount);
+        setWithholdingRate(parseFloat(bill.withholding));
+        setWithholdingAmount(bill.withholding_amount);
         setDebt(bill.debt);
         console.log('searchDatabill', bill);
       } else {
@@ -203,11 +220,13 @@ const EditSearch = ({ open, onClose, searchId }) => {
         check_time: check_time,
         material: material,
         quantity: parseFloat(quantity),
-        unit_price: parseFloat(unit_price),
+        unit_price: parseFloat(unitPrice),
         price: parseFloat(price),
-        tax: parseFloat(tax),
-        withholding: parseFloat(withholding),
-        receivable: parseFloat(receivable),
+        tax: taxRate,
+        tax_amount: taxAmount.toFixed(2),
+        withholding: withholdingRate,
+        withholding_amount: withholdingAmount.toFixed(2),
+        receivable: (price + taxAmount - withholdingAmount).toFixed(2),
         debt: parseFloat(debt)
       };
       console.log('searchData', searchData);
@@ -374,64 +393,61 @@ const EditSearch = ({ open, onClose, searchId }) => {
 
             <Grid item xs={12} md={6}>
               <TextField
-                label="Birim"
+                label="Birim Fiyatı"
                 fullWidth
-                value={unit_price != null ? unit_price : ''}
-                onChange={(e) => setUnit_price(e.target.value)}
+                value={unitPrice != null ? unitPrice : ''}
+                onChange={(e) => setUnitPrice(e.target.value)}
                 type="number"
                 InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-                error={!!errors.unit_price}
-                helperText={errors.unit_price}
+                error={!!errors.unitPrice}
+                helperText={errors.unitPrice}
               />
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <TextField
-                label="Tutar"
-                fullWidth
-                value={price != null ? price : ''}
-                onChange={(e) => setPrice(e.target.value)}
-                type="number"
-                InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-                error={!!errors.price}
-                helperText={errors.price}
-              />
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <TextField
-                label="KDV Oranı"
-                fullWidth
-                value={tax != null ? tax : ''}
-                onChange={(e) => setTax(e.target.value)}
-                type="number"
-                InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-                error={!!errors.tax}
-                helperText={errors.tax}
-              />
+              <TextField label="Tutar" fullWidth value={parseFloat(price).toFixed(2)} InputProps={{ readOnly: true }} />
             </Grid>
             <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>KDV (%)</InputLabel>
+                <Select value={taxRate} onChange={(e) => setTaxRate(e.target.value)} label="KDV (%)">
+                  {KDV_RATES.map((r) => (
+                    <MenuItem key={r} value={r}>
+                      {r}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField label="KDV Tutarı" fullWidth value={parseFloat(taxAmount).toFixed(2)} InputProps={{ readOnly: true }} />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Tevkifat</InputLabel>
+                <Select value={withholdingRate} onChange={(e) => setWithholdingRate(e.target.value)} label="Tevkifat">
+                  {WITHHOLDING_RATES.map((o) => (
+                    <MenuItem key={o.label} value={o.value}>
+                      {o.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
               <TextField
-                label="Tevkifat Oranı"
+                label="Tevkifat Tutarı"
                 fullWidth
-                value={withholding != null ? withholding : ''}
-                onChange={(e) => setWithholding(e.target.value)}
-                type="number"
-                InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-                error={!!errors.withholding}
-                helperText={errors.withholding}
+                value={parseFloat(withholdingAmount).toFixed(2)}
+                InputProps={{ readOnly: true }}
               />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
                 label="Alacak Tutarı"
                 fullWidth
-                value={receivable != null ? receivable : ''}
-                onChange={(e) => setReceivable(e.target.value)}
-                type="number"
-                InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-                error={!!errors.receivable}
-                helperText={errors.receivable}
+                value={parseFloat(price + taxAmount - withholdingAmount).toFixed(2)}
+                InputProps={{ readOnly: true }}
               />
             </Grid>
 

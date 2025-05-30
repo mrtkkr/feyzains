@@ -59,6 +59,7 @@ class Customer(models.Model):
     name = models.CharField(max_length=255)
     created_date = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    balance = models.DecimalField(max_digits=20, decimal_places=2, default=0.00)
 
 
 
@@ -121,6 +122,7 @@ class Personal(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
 class PaymenInvoice(models.Model):
+    invoice_no = models.CharField(max_length=100, null=True, blank=True)
     date = models.DateTimeField()
     worksite = models.ForeignKey(Worksite, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
@@ -138,9 +140,11 @@ class PaymenInvoice(models.Model):
     material = models.CharField(max_length=255,null=True, blank=True)
     quantity = models.IntegerField(null=True, blank=True)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    price = models.DecimalField(max_digits=18, decimal_places=2,null=True, blank=True)
     tax = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     withholding = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    withholding_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     receivable = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
 
     created_date = models.DateTimeField(auto_now_add=True)

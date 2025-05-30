@@ -533,11 +533,11 @@ const CheckListPage = () => {
                   <TableCell>Çek No</TableCell>
                   <TableCell>Çek Vade</TableCell>
                   <TableCell>Müşteri</TableCell>
+                  <TableCell>Tutar</TableCell>
+                  <TableCell>Banka</TableCell>
                   <TableCell>Şirket</TableCell>
                   <TableCell>Şantiye</TableCell>
                   <TableCell>Grup</TableCell>
-                  <TableCell>Banka</TableCell>
-                  <TableCell>Borç</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -547,11 +547,11 @@ const CheckListPage = () => {
                       <TableCell>{checklists.check_no || '-'}</TableCell>
                       <TableCell>{formatDate(checklists.check_time)}</TableCell>
                       <TableCell>{checklists.customer?.name || '-'}</TableCell>
+                      <TableCell>{formatNumber(checklists.debt)}</TableCell>
+                      <TableCell>{checklists.bank || '-'}</TableCell>
                       <TableCell>{checklists.company?.name || '-'}</TableCell>
                       <TableCell>{checklists.worksite?.name || '-'}</TableCell>
                       <TableCell>{checklists.group?.name || '-'}</TableCell>
-                      <TableCell>{checklists.bank || '-'}</TableCell>
-                      <TableCell>{formatNumber(checklists.debt)}</TableCell>
                     </TableRow>
                   ))
                 ) : (

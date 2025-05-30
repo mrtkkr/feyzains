@@ -40,9 +40,73 @@ const CreatePaymentEntry = ({ open, onClose }) => {
   const [check_no, setCheck_no] = useState('');
   const [check_time, setCheck_time] = useState(null);
   const [debt, setDebt] = useState('');
+  const [displayDebt, setDisplayDebt] = useState(''); // Görsel için formatlı değer
 
   // Validation errors
   const [errors, setErrors] = useState({});
+
+  // Sayıyı formatla (görsel için)
+  const formatNumber = (value, hasDecimal = false) => {
+    if (!value) return '';
+
+    const num = parseFloat(value);
+    if (isNaN(num)) return '';
+
+    if (hasDecimal) {
+      return new Intl.NumberFormat('tr-TR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      }).format(num);
+    } else {
+      // Tam sayı için sadece binlik ayırıcı
+      return new Intl.NumberFormat('tr-TR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(num);
+    }
+  };
+
+  // Formatlanmış stringi sayıya çevir
+  const parseFormattedNumber = (formattedValue) => {
+    if (!formattedValue) return '';
+
+    // Türkçe formatı temizle: nokta ve virgülleri kaldır, son virgülü ondalık ayırıcısı yap
+    const cleaned = formattedValue.replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(cleaned);
+
+    return isNaN(num) ? '' : num.toString();
+  };
+
+  // Borç tutarı değişim handler'ı
+  const handleDebtChange = (e) => {
+    const inputValue = e.target.value;
+
+    // Sadece rakam, virgül ve nokta kabul et
+    const sanitized = inputValue.replace(/[^0-9.,]/g, '');
+
+    // Eğer kullanıcı virgül yazıyorsa, henüz formatlamaya çalışma
+    if (sanitized.endsWith(',')) {
+      setDisplayDebt(sanitized);
+      return;
+    }
+
+    // Virgül var mı kontrol et
+    const hasComma = sanitized.includes(',');
+
+    // Gerçek değeri sakla (API için)
+    const realValue = parseFormattedNumber(sanitized);
+    setDebt(realValue);
+
+    // Formatlanmış değeri göster
+    if (sanitized && realValue) {
+      const formatted = formatNumber(realValue, hasComma);
+      setDisplayDebt(formatted);
+    } else if (sanitized) {
+      setDisplayDebt(sanitized);
+    } else {
+      setDisplayDebt('');
+    }
+  };
 
   // Şantiyeleri, grupları, Şirketleri ve müşterileri yükle
   useEffect(() => {
@@ -143,7 +207,7 @@ const CreatePaymentEntry = ({ open, onClose }) => {
         bank: bank,
         check_no: check_no,
         check_time: check_time,
-        debt: parseFloat(debt),
+        debt: parseFloat(debt), // Ham sayı değeri gönderiliyor
         type: 'payment'
       };
 
@@ -182,6 +246,7 @@ const CreatePaymentEntry = ({ open, onClose }) => {
     setCheck_no('');
     setCheck_time('');
     setDebt('');
+    setDisplayDebt(''); // Formatlanmış değeri de sıfırla
     setErrors({});
   };
 
@@ -300,13 +365,17 @@ const CreatePaymentEntry = ({ open, onClose }) => {
           <Grid item xs={12} md={6}>
             <TextField
               label="Borç Tutarı"
-              type="number"
               fullWidth
-              value={debt}
-              onChange={(e) => setDebt(e.target.value)}
-              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+              value={displayDebt} // Formatlanmış değeri göster
+              onChange={handleDebtChange} // Özel handler kullan
+              placeholder="0,00 ₺"
               error={!!errors.debt}
               helperText={errors.debt}
+              InputProps={{
+                inputProps: {
+                  style: { textAlign: 'right' } // Sağa hizala
+                }
+              }}
             />
           </Grid>
         </Grid>
