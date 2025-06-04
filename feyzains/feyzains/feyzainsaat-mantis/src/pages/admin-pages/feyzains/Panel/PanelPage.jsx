@@ -76,7 +76,7 @@ const PanelPage = () => {
   const [newUser, setNewUser] = useState({
     first_name: '',
     last_name: '',
-    user_name: '',
+    email: '',
     phone: '',
     password: '',
     is_staff: false
@@ -85,7 +85,7 @@ const PanelPage = () => {
     type: 'manager',
     first_name: '',
     last_name: '',
-    user_name: '',
+    email: '',
     password: ''
   });
 
@@ -292,7 +292,7 @@ const PanelPage = () => {
         type: 'manager',
         first_name: '',
         last_name: '',
-        user_name: '',
+        email: '',
         password: '',
         is_staff: false
       });
@@ -523,9 +523,9 @@ const PanelPage = () => {
                   <Grid item xs={12} sm={6}>
                     <TextField
                       fullWidth
-                      label="Kullanıcı Adı"
-                      value={newUser.user_name}
-                      onChange={(e) => setNewUser({ ...newUser, user_name: e.target.value })}
+                      label="Email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                       required
                     />
                   </Grid>
@@ -571,7 +571,7 @@ const PanelPage = () => {
                 <TableRow>
                   <TableCell>Ad</TableCell>
                   <TableCell>Soyad</TableCell>
-                  <TableCell>Kullanıcı Adı</TableCell>
+                  <TableCell>Email</TableCell>
                   <TableCell align="right">İşlemler</TableCell>
                 </TableRow>
               </TableHead>
@@ -580,7 +580,7 @@ const PanelPage = () => {
                   <TableRow key={user.id}>
                     <TableCell>{user.first_name}</TableCell>
                     <TableCell>{user.last_name}</TableCell>
-                    <TableCell>{user.user_name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
                     <TableCell align="right">
                       <Tooltip title="Düzenle">
                         <IconButton onClick={() => handleEditUserClick(user.id)}>

@@ -30,6 +30,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
     group: '',
     company: '',
     customer: '',
+    customer_ids: [],
     bank: '',
     check_no: '',
     material: '',
@@ -46,6 +47,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
   const [checklists, setChecklists] = useState([]);
   const [count, setCount] = useState(0); // toplam kayıt sayısı
   const [searchs, setSearchs] = useState([]);
+  const [searchAll, setSearchAll] = useState([]);
   const [error, setError] = useState(null);
   // Add a flag to track whether data has been loaded
   const dataLoaded = useRef(false);
@@ -60,6 +62,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
   const checklistUrl = 'checklist/';
   const searchListUrl = 'search_page/';
   const searchDetailUrl = 'search_pages/';
+  const searchAllUrl = 'search_all/';
 
   const formatDate = (date) => {
     if (!date) return '';
@@ -232,7 +235,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
   const fetchSearchs = useCallback(
     async ({
       page = 0,
-      pageSize = 10,
+      pageSize = pageSize || 10,
       order_by = 'date',
       order = 'desc',
       startDate = searchFilters.startDate,
@@ -241,6 +244,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
       group = searchFilters.group,
       company = searchFilters.company,
       customer = searchFilters.customer,
+      customer_ids = searchFilters.customer_ids,
       bank = searchFilters.bank,
       check_no = searchFilters.check_no,
       material = searchFilters.material,
@@ -268,6 +272,7 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
         if (group) queryParams.group = group;
         if (company) queryParams.company = company;
         if (customer) queryParams.customer = customer;
+        if (customer_ids && customer_ids.length > 0) queryParams.customer_ids = customer_ids.join(',');
         if (bank) queryParams.bank = bank;
         if (check_no) queryParams.check_no = check_no;
         if (material) queryParams.material = material;
@@ -301,6 +306,27 @@ const PaymentEntryInvoiceProvider = ({ children }) => {
     },
     [searchFilters]
   );
+
+  const fetchSearchAll = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await sendApiRequest({ url: searchAllUrl, method: 'GET' });
+      if (res.response.status === 200) {
+        setSearchAll(res.data || []);
+        return res.data;
+      } else {
+        setError('Veriler alınırken bir hata oluştu.');
+        console.error('Failed to fetch all products:', res.response);
+      }
+    } catch (error) {
+      setError('API çağrısı başarısız oldu.');
+      console.error('Failed to fetch orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const createInvoice = async (data) => {
     setLoading(true);

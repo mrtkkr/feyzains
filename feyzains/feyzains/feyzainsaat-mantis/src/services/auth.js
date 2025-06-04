@@ -2,7 +2,7 @@ import { sendApiRequest } from './network_service.js';
 import { toast } from 'react-toastify';
 
 export const login = async (email, password) => {
-  const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || 'http://127.0.0.1:8000/';
+  const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || 'https://melsa.eytsoftdemo.com/api/';
   const apiUrl = PUBLIC_URL + 'login/';
 
   console.log('apiUrl', apiUrl);
@@ -70,7 +70,7 @@ export const logout = async () => {
 };
 
 export const register = async ({ first_name, last_name, email, password, company }) => {
-  const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || 'http://127.0.0.1:8000/';
+  const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || 'https://melsa.eytsoftdemo.com/api/';
   const apiUrl = PUBLIC_URL + 'register/'; // API'nde bu endpoint varsa
 
   try {

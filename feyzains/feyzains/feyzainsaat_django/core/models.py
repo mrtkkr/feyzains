@@ -60,6 +60,18 @@ class Customer(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0.00)
+    balance_status = models.CharField(
+        max_length=1,
+        choices=(
+            ('A', 'Alacak'),
+            ('B', 'Borç'),
+            ('0', 'Denk')
+        ),
+        default='0'
+    )
+
+    def __str__(self):
+        return self.name
 
 
 
@@ -145,7 +157,7 @@ class PaymenInvoice(models.Model):
     tax_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     withholding = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     withholding_amount = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
-    receivable = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
+    receivable = models.DecimalField(max_digits=15, decimal_places=2,null=True, blank=True)
 
     created_date = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)

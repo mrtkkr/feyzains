@@ -34,5 +34,6 @@ urlpatterns = [
 
     path("search_page/", SearchPagelistView.as_view(), name="search_page_api"),
     path("search_pages/<int:pk>/", SearchPageDetailView.as_view(), name="search_page_detail_api"),
+    path("search_all/", SearchAllView.as_view(), name="search_all_api"),
 
 ]

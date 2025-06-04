@@ -1,6 +1,6 @@
 import { jwtDecode } from 'jwt-decode';
 
-const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || 'http://127.0.0.1:8000/';
+const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL || 'https://melsa.eytsoftdemo.com/api/';
 
 const isTokenExpired = (token) => {
   if (!token) return true;

@@ -393,6 +393,18 @@ class SearchPagelistView(APIView):
 
         print("startDateeee:", start_date)
         print("endDateeee:", end_date)
+        
+        # Çoklu müşteri seçimi için özel işlem
+        customer_param = request.query_params.get('customer_ids', '')
+        customer_ids = []
+        
+        if customer_param:
+            try:
+                # Virgülle ayrılmış müşteri ID'lerini parse et
+                customer_ids = [int(id.strip()) for id in customer_param.split(',') if id.strip()]
+                print("Seçili müşteri ID'leri:", customer_ids)
+            except ValueError:
+                return Response({'error': 'Müşteri ID formatı hatalı.'}, status=400)
 
         # Filtre parametreleri
         filters = {
@@ -423,6 +435,11 @@ class SearchPagelistView(APIView):
             if value != '':
                 print(f"{field} = {value}")
                 q_objects &= Q(**{field: value})
+                
+        # Çoklu müşteri filtresi
+        if customer_ids:
+            q_objects &= Q(customer__id__in=customer_ids)
+            print(f"Müşteri filtresi uygulandı: {customer_ids}")
 
         # Tarih filtrelemesi
         if start_date and end_date:
@@ -438,8 +455,7 @@ class SearchPagelistView(APIView):
         print("queryseeettt:", queryset.count())
 
         # Sıralama uygula
-        if order == 'desc':
-            order_by = f'-{order_by}'
+        order_by = f'-{order_by}'
         queryset = queryset.order_by(order_by)
 
         # Sayfalama ve serialize
@@ -477,6 +493,12 @@ class SearchPageDetailView(APIView):
         searchPage.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+class SearchAllView(APIView):
+    def get(self, request):
+        products = PaymenInvoice.objects.all()
+        serializer = PaymenInvoiceSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 # class SearchlistView(APIView):
 #     def get(self, request):

@@ -24,7 +24,8 @@ import {
   FormControlLabel,
   Checkbox,
   InputAdornment,
-  CircularProgress
+  CircularProgress,
+  ListItemText,
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -125,6 +126,7 @@ const SearchPage = () => {
     group: '',
     company: '',
     customer: '',
+    customer_ids: [], // Çoklu seçim için
     bank: '',
     check_no: '',
     material: '',
@@ -155,6 +157,8 @@ const SearchPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchCount, setSearchCount] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedCustomers, setSelectedCustomers] = useState([]); // Seçili müşteri ID'leri
+  const [selectOpen, setSelectOpen] = useState(false); // Select açık/kapalı durumu
 
   // Sadece bir kez veri çekme - sonsuz döngüyü önlemek için bağımlılık dizisi doğru yapılandırıldı
   useEffect(() => {
@@ -191,6 +195,26 @@ const SearchPage = () => {
     fetchGroups();
     fetchCustomers();
   }, []);
+
+  const handleCustomerToggle = (customerId) => {
+    setSelectedCustomers((prev) => {
+      const isSelected = prev.includes(customerId);
+      if (isSelected) {
+        // Seçiliyse kaldır
+        return prev.filter((id) => id !== customerId);
+      } else {
+        // Seçili değilse ekle
+        return [...prev, customerId];
+      }
+    });
+  };
+
+  
+
+  // Seçimi temizleme fonksiyonu (isteğe bağlı)
+  const clearSelection = () => {
+    setSelectedCustomers([]);
+  };
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -265,6 +289,7 @@ const SearchPage = () => {
       group: searchGroup,
       company: searchCompany,
       customer: searchCustomer,
+      customer_ids: selectedCustomers, // Çoklu seçim için
       bank: searchBank,
       check_no: searchCheckNo,
       material: searchMaterial,
@@ -290,7 +315,8 @@ const SearchPage = () => {
       worksite: searchWorsite,
       group: searchGroup,
       company: searchCompany || selectedCompany, // Öncelik manuel girilende, yoksa seçilende
-      customer: searchCustomer || selectedCustomer,
+      customer: searchCustomer,
+      customer_ids: selectedCustomers, // Çoklu seçim için
       bank: searchBank,
       check_no: searchCheckNo,
       material: searchMaterial,
@@ -477,6 +503,24 @@ const SearchPage = () => {
         currentRow++;
       });
 
+      let difference = totalDebt - totalReceivable;
+      let balanceStatus = '';
+
+      if (difference < 0) {
+        balanceStatus = 'A'; // Alacak
+        difference = Math.abs(difference);
+      } else if (difference > 0) {
+        balanceStatus = 'B'; // Borç
+        difference = Math.abs(difference);
+      } else {
+        balanceStatus = ''; // Eşit
+      }
+
+      const formattedDebt = formatNumber(totalDebt);
+      const formattedDifference = formatNumber(difference);
+
+      const bakiyeCellText = `Bakiye: ${formattedDifference} (${balanceStatus})`;
+
       // Toplam satırı
       const totalRowValues = [];
       filteredColumns.forEach((col) => {
@@ -493,6 +537,8 @@ const SearchPage = () => {
           case 'borcTutari':
             totalRowValues.push(formatNumber(totalDebt));
             break;
+          case 'olusturan':
+            totalRowValues.push(bakiyeCellText);
           default:
             totalRowValues.push('');
         }
@@ -502,6 +548,7 @@ const SearchPage = () => {
       totalRow.values = totalRowValues;
       totalRow.font = { bold: true };
       totalRow.alignment = { horizontal: 'center' };
+
 
       // Excel dosyasını oluştur ve indir
       const buffer = await workbook.xlsx.writeBuffer();
@@ -760,6 +807,27 @@ const SearchPage = () => {
         totalDebt += Number(entry.debt) || 0;
       });
 
+      let differance = totalDebt - totalReceivable;
+      let balanceStatus = '';
+
+      if (differance < 0) {
+        balanceStatus = 'A'; // Alacak
+        differance = Math.abs(differance);
+      } else if(differance > 0) {
+        balanceStatus = 'B'; // Borç
+        differance = Math.abs(differance);
+      }
+      else {
+        balanceStatus = ''; // Eşit
+      }
+
+      const formattedDebt = formatNumber(totalDebt);
+      const formattedDifference = formatNumber(differance);
+
+      const borcCellText = `${formattedDebt}\nBakiye:\n${formattedDifference} (${balanceStatus})`;
+
+
+
       // "Toplam" satırı ekle - filtrelenmiş
       currentX = marginX;
       const totalRow = [];
@@ -773,7 +841,7 @@ const SearchPage = () => {
             totalRow.push(formatNumber(totalReceivable));
             break;
           case 'borcTutari':
-            totalRow.push(formatNumber(totalDebt));
+            totalRow.push(borcCellText);
             break;
           case 'tarih':
             totalRow.push('TOPLAM');
@@ -783,23 +851,31 @@ const SearchPage = () => {
         }
       });
 
+
       // Kutuları çiz
       doc.setFontStyle?.('bold'); // Eski sürümde varsa
       doc.setFontSize(9);
       totalRow.forEach((cell, i) => {
-        doc.rect(currentX, currentY, columnWidths[i], cellHeight);
-        currentX += columnWidths[i];
-      });
-
-      // Metni yaz
-      currentX = marginX;
-      totalRow.forEach((cell, i) => {
-        doc.text(cell.toString(), currentX + 4, currentY + 7, {
-          charSpace: 0,
-          lineHeightFactor: 1,
-          maxWidth: columnWidths[i] - 8,
-          align: 'left'
-        });
+        if (filteredHeaders[i].key === 'borcTutari') {
+          // Çok satırlı metin için:
+          const lines = cell.split('\n');
+          lines.forEach((line, index) => {
+            doc.text(line, currentX + 4, currentY + 7 + index * 7, {
+              charSpace: 0,
+              lineHeightFactor: 1,
+              maxWidth: columnWidths[i] - 8,
+              align: 'left'
+            });
+          });
+        } else {
+          // Normal tek satırlı metin
+          doc.text(cell.toString(), currentX + 4, currentY + 7, {
+            charSpace: 0,
+            lineHeightFactor: 1,
+            maxWidth: columnWidths[i] - 8,
+            align: 'left'
+          });
+        }
         currentX += columnWidths[i];
       });
 
@@ -839,6 +915,17 @@ const SearchPage = () => {
   const totalPrice = visibleSearchRows.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
   const totalReceivable = visibleSearchRows.reduce((sum, item) => sum + (Number(item.receivable) || 0), 0);
   const totalDebt = visibleSearchRows.reduce((sum, item) => sum + (Number(item.debt) || 0), 0);
+  const balance = totalDebt - totalReceivable;
+  let balanceStatus = '';
+  if (balance < 0) {
+    balanceStatus = 'A';
+  }
+  else if (balance > 0) {
+    balanceStatus = 'B';
+  } 
+  else {
+    balanceStatus = '';
+  }
 
   return (
     <>
@@ -883,14 +970,96 @@ const SearchPage = () => {
 
               <Grid item xs={12} sm={6} md={3}>
                 <FormControl fullWidth>
-                  <InputLabel>Müşteri Seç</InputLabel>
-                  <Select value={selectedCustomer} label="Müşteri Seç" onChange={(e) => setSelectedCustomer(e.target.value)}>
-                    <MenuItem value="">Tümü</MenuItem>
-                    {customers.map((customer) => (
-                      <MenuItem key={customer.id} value={customer.name}>
-                        {customer.name}
-                      </MenuItem>
-                    ))}
+                  <InputLabel></InputLabel>
+                  <Select
+                    multiple
+                    value={selectedCustomers}
+                    onChange={(e) => setSelectedCustomers(e.target.value)}
+                    label="Müşteri Seç"
+                    displayEmpty
+                    open={selectOpen}
+                    onOpen={() => setSelectOpen(true)}
+                    onClose={() => setSelectOpen(false)}
+                    MenuProps={{
+                      PaperProps: {
+                        style: {
+                          maxHeight: '200px' // 3 müşteri yüksekliği kadar
+                        }
+                      }
+                    }}
+                    renderValue={() => {
+                      if (selectedCustomers.length === 0) {
+                        return 'Müşteri Seçin';
+                      }
+                      return `${selectedCustomers.length} müşteri seçildi`;
+                    }}
+                  >
+                    {customers.map((customer) => {
+                      // Balance değeri string gelebilir, önce Number() ile sayıya çeviriyoruz:
+                      const balanceNum = Number(customer.balance || 0);
+                      // Negatif işareti kaldırmak için Math.abs():
+                      const absBalance = Math.abs(balanceNum);
+                      // "₺1.234,56" formatı:
+                      const formattedBalance = absBalance.toLocaleString('tr-TR', {
+                        style: 'currency',
+                        currency: 'TRY',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      });
+                      // Backend'den gelen balance_status: 'A', 'B' veya '0'
+                      const status = customer.balance_status === 'A' ? 'A' : customer.balance_status === 'B' ? 'B' : '';
+
+                      return (
+                        <MenuItem
+                          key={customer.id}
+                          value={customer.id}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleCustomerToggle(customer.id);
+                          }}
+                          style={{
+                            backgroundColor: 'transparent',
+                            paddingRight: '16px'
+                          }}
+                        >
+                          <Checkbox
+                            checked={selectedCustomers.includes(customer.id)}
+                            onChange={() => handleCustomerToggle(customer.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <ListItemText primary={`${customer.name} – ${formattedBalance} ${status}`} style={{ marginLeft: '8px' }} />
+                        </MenuItem>
+                      );
+                    })}
+
+                    {/* Filtrele Butonu */}
+                    <MenuItem
+                      style={{
+                        backgroundColor: '#f5f5f5',
+                        borderTop: '1px solid #e0e0e0',
+                        justifyContent: 'center',
+                        marginTop: '8px'
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleFilter();
+                        setSelectOpen(false);
+                      }}
+                    >
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        fullWidth
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFilter();
+                          setSelectOpen(false);
+                        }}
+                      >
+                        Filtrele
+                      </Button>
+                    </MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -943,7 +1112,7 @@ const SearchPage = () => {
                       <TableCell>Tarih</TableCell>
                       <TableCell>Şantiye</TableCell>
                       <TableCell>Grup</TableCell>
-                      {!selectedCustomer && <TableCell>Müşteri</TableCell>}
+                      {(!selectedCustomer && selectedCustomers.length != 1 ) && <TableCell>Müşteri</TableCell>}
                       {!selectedCompany && <TableCell>Şirket</TableCell>}
 
                       <TableCell>Banka</TableCell>
@@ -967,7 +1136,7 @@ const SearchPage = () => {
                           <TableCell>{formatDate(searchs.date)}</TableCell>
                           <TableCell>{searchs.worksite?.name || '-'}</TableCell>
                           <TableCell>{searchs.group?.name || '-'}</TableCell>
-                          {!selectedCustomer && <TableCell>{searchs.customer?.name || '-'}</TableCell>}
+                          {(!selectedCustomer && selectedCustomers.length != 1) && <TableCell>{searchs.customer?.name || '-'}</TableCell>}
                           {!selectedCompany && <TableCell>{searchs.company?.name || '-'}</TableCell>}
                           <TableCell>{searchs.bank || '-'}</TableCell>
                           <TableCell>{searchs.check_no || '-'}</TableCell>
@@ -1033,7 +1202,7 @@ const SearchPage = () => {
                         <TableCell sx={{ fontWeight: 'bold' }}>Toplam Borç:</TableCell>
 
                         {/* İşlemler */}
-                        <TableCell />
+                        <TableCell sx={{ fontWeight: 'bold' }}>Bakiye:</TableCell>
                       </TableRow>
                     )}
 
@@ -1058,14 +1227,16 @@ const SearchPage = () => {
                         <TableCell sx={{ fontWeight: 'bold' }}>{formatNumber(totalDebt)}</TableCell>
 
                         {/* İşlemler */}
-                        <TableCell />
+                        <TableCell sx={{ fontWeight: 'bold' }}>
+                          {formatNumber(Math.abs(balance)) + ' ' + balanceStatus} 
+                        </TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
               </TableContainer>
               <TablePagination
-                rowsPerPageOptions={[10, 25, 50]}
+                rowsPerPageOptions={[10]}
                 component="div"
                 count={count}
                 rowsPerPage={rowsPerPage}
